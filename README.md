@@ -27,6 +27,12 @@ library(sdm)
 ```
 
 Prepare occurrence data
+=======================
+
+We’ll use the west coast carnivorous plant, [*Darlingtonia
+californica*](https://en.wikipedia.org/wiki/Darlingtonia_californica),
+as our species of interest. ![*Darlingtonia
+Californica*](/includes/dar.jpg)
 
 ``` r
 # Source occurrence data from iNaturalist
