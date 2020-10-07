@@ -17,7 +17,7 @@ library(rgdal)
 library(raster)
 # SDM packages
 library(dismo)
-library(biomod2)
+library(sdm)
 
 
 # Let's ready some political boundaries in for visualization
@@ -26,6 +26,7 @@ CA_OR.shp <- usa.shp[usa.shp@data$NAME %in% c("California", "Oregon"),]
 
 # Source occurrence data from iNaturalist
 dc <- occ(query = "Darlingtonia californica", from = 'inat')
+# Could just as easily source from gbif:
 # dc <- occ(query = "Darlingtonia californica", from = 'gbif')
 
 # Horrible nasty function that makes species occurrence data into lon, lat dataframe
@@ -231,7 +232,6 @@ project.sdm(prediction_glm3.Ey, "GLM SDM (D. californica)")
 # Now let's use real software based SDMs
 # Here's Machine Learning GLM
 # Let's try sdm package
-library(sdm)
 # sdm packages can do GLM, GAM, GBM, RF, TREE, MARS, SVM
 
 # Prep data format for the sdm package
