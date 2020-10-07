@@ -1,5 +1,11 @@
-This script was largely based on THIS and THIS and serves to provide a walkthrough SDM, various SDM implementations in R as of Fall 2020 and the extent of my understanding of how different SDM methods work
-=============================================================================================================================================================================================================
+An overview of Species Distribution Modeling in R
+=================================================
+
+### This script was largely based on THIS and THIS and serves to provide a walkthrough of SDM, and popular implementations in R as of Fall 2020. I’ve included the extent of my understanding of how the different methods work.
+
+### Feel free to download the sdm_demo.R script, install the necessary packages, and run and manipulate this code as you see fit.
+
+Let’s start by reading in the necessary packages
 
 ``` r
 # For downloading occurrence data from multiple sources
@@ -17,5 +23,32 @@ library(rgdal)
 library(raster)
 # SDM packages
 library(dismo)
-library(biomod2)
+library(sdm)
+```
+
+Prepare occurrence data
+
+``` r
+# Source occurrence data from iNaturalist
+dc <- occ(query = "Darlingtonia californica", from = 'inat')
+```
+
+    ## 2 
+    ## 3
+
+``` r
+# Could just as easily source from gbif:
+# dc <- occ(query = "Darlingtonia californica", from = 'gbif')
+
+# Horrible nasty function that makes species occurrence data into lon, lat dataframe
+dc.df <-  as.data.frame(dc$inat$data$Darlingtonia_californica%>%
+  dplyr::filter(identifications_most_agree == TRUE) %>%
+  dplyr::select(location)) %>% 
+  filter(!is.na(location)) %>% 
+  separate(location, c("lat", "lon"), ",") %>% 
+  select(lon, lat)
+
+# Lat and Lon columns must be specified as numeric values
+dc.df$lon <- as.numeric(dc.df$lon)
+dc.df$lat <- as.numeric(dc.df$lat)
 ```
