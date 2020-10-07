@@ -164,7 +164,7 @@ legend("topright", legend = c("Linear Model"), col = c("blue"), lty=1, lwd = 3)
 
 sdm_glm <- glm(Ey ~ MTWQ, data = sdmdata, family = binomial)
 
-# This is the equation of line 142, written in R
+# This is the equation of line 142, written as an R function
 Ey_calc <- function(x){
   y_int <- as.numeric(sdm_glm$coefficients["(Intercept)"])
   m <- as.numeric(sdm_glm$coefficients["MTWQ"])
@@ -324,7 +324,7 @@ points(dc.df, pch = 16, cex = .2)
 legend("bottomright", legend = "obs. occurrences", pch = 16)
 
 
-# Now I should composite all models
+# Amalgamation of all models:
 
 par(mfrow=c(3,3))
 project.sdm(prediction_glm.Ey, "GLM SDM (D. californica), MTWQ only")
