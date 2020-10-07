@@ -1,6 +1,6 @@
 # This script demonstrates some methods of using R in SDM, and attempts to teach 
-# SDM concepts through demonstration
-# here's a change
+# SDM concepts through demonstration this is more or less the first draft of the 
+# RMarkdown File in this repo
 
 # For downloading occurrence data from multiple sources
 library(spocc)
@@ -28,7 +28,7 @@ CA_OR.shp <- usa.shp[usa.shp@data$NAME %in% c("California", "Oregon"),]
 dc <- occ(query = "Darlingtonia californica", from = 'inat')
 # dc <- occ(query = "Darlingtonia californica", from = 'gbif')
 
-# Horrible nasty function that makes occurrence data into lon, lat dataframe
+# Horrible nasty function that makes species occurrence data into lon, lat dataframe
 dc.df <-  as.data.frame(dc$inat$data$Darlingtonia_californica%>%
   dplyr::filter(identifications_most_agree == TRUE) %>%
   dplyr::select(location)) %>% 
@@ -36,18 +36,23 @@ dc.df <-  as.data.frame(dc$inat$data$Darlingtonia_californica%>%
   separate(location, c("lat", "lon"), ",") %>% 
   select(lon, lat)
 
+# Lat and Lon columns must be specified as numeric values
 dc.df$lon <- as.numeric(dc.df$lon)
 dc.df$lat <- as.numeric(dc.df$lat)
 
+# Let's take a look at our raw occurrence points
 sp::plot(CA_OR.shp, main = "Darlingtonia californica (iNaturalist)")
 points(dc.df$lon, dc.df$lat)
 
 # Download bioclimatic variables from worldclim
+# run ??getData to see other options for climate data
 bioclim_global.stack <- raster::getData(name = "worldclim",
                         var = 'bio', 
                         res = 2.5)
 
-# This replaces biox name with more descriptive acronym
+# This replaces bioX name with more descriptive acronym
+# We choose 4 climatic variables here more for examplary purposes than biologically
+# sound reason
 names(bioclim_global.stack)[names(bioclim_global.stack) %in% c("bio1", "bio10", "bio11", "bio12")] <- 
   c("MAT", "MTWQ", "MTCQ", "MAP")
 
@@ -62,16 +67,30 @@ predictors <- raster::subset(bioclim.stack, c("MAT", "MTWQ", "MTCQ", "MAP"))
 # bio12 = Annual Precipitation (MAP)
 # etc.
 
+# Let's see what Mean Annual temperature raster looks like
 sp::plot(predictors$MAT, main = "Mean Annual Temperature")
 
 
 # Organizing species presence and environmental predictors into data.frames
+
+# These are the predictor values at locations of species presence
 presvals <- raster::extract(predictors, dc.df)
+
+# These are 500 random locations, used as in place of absence values as 
+# 'pseudoabsences' (the species probably doesn't occur at any random point)
 backgr <- randomPoints(predictors, 500)
+
+# predictor values at random locations
 absvals <- raster::extract(predictors, backgr)
+
+# We know that expected habitat suitability (Ey) is 1 for areas where the species
+# was found, and we assume it's 0 for the random background points
 Ey <- c(rep(1, nrow(presvals)), rep(0, nrow(absvals)))
 
+# Now here we have a dataframe with the response variable (Ey) and corresponding
+# predictor values
 sdmdata <- data.frame(cbind(Ey, rbind(presvals, absvals)))
+View(sdmdata)
 
 # Look for collinearity using a scatterplot matrix
 pairs(sdmdata[,2:length(sdmdata)], cex = 0.1, fig=TRUE)
