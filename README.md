@@ -98,20 +98,86 @@ bioclim_global.stack <- raster::getData(name = "worldclim",
 # sound reasoning
 names(bioclim_global.stack)[names(bioclim_global.stack) %in% c("bio1", "bio10", "bio11", "bio12")] <- 
   c("MAT", "MTWQ", "MTCQ", "MAP")
-
-# This crops the extent to Oregon and California
-bioclim.stack <- crop(bioclim_global.stack, extent(CA_OR.shp))
-
-# Let's only look at these 4 variables
-predictors <- raster::subset(bioclim.stack, c("MAT", "MTWQ", "MTCQ", "MAP"))
 # bio1 = Mean Annual Temperature (MAT)
 # bio10 = Mean Temperature of Warmest Quarter (MTWQ)
 # bio11 = Mean Temperature of Coldest Quarter (MTCQ)
 # bio12 = Annual Precipitation (MAP)
 # etc.
 
+# This crops the extent to Oregon and California
+bioclim.stack <- crop(bioclim_global.stack, extent(CA_OR.shp))
+
+# Let's only look at these 4 variables
+predictors <- raster::subset(bioclim.stack, c("MAT", "MTWQ", "MTCQ", "MAP"))
+
 # Let's see what Mean Annual temperature raster looks like
 sp::plot(predictors$MAT, main = "Mean Annual Temperature")
 ```
 
 ![](README_files/figure-markdown_github/predictor%20data-1.png)
+
+Build SDM-ready dataframe of predictor values and species presence/(pseudo)absence
+==================================================================================
+
+``` r
+# These are the predictor values at locations of species presence
+presvals <- raster::extract(predictors, dc.df)
+
+# These are 500 random locations, used as in place of absence values as 
+# 'pseudoabsences' (the species probably doesn't occur at any random point)
+backgr <- randomPoints(predictors, 500)
+
+# predictor values at random locations
+absvals <- raster::extract(predictors, backgr)
+
+# We know that expected habitat suitability (Ey) is 1 for areas where the species
+# was found, and we assume it's 0 for the random background points
+Ey <- c(rep(1, nrow(presvals)), rep(0, nrow(absvals)))
+
+# Now here we have a dataframe with the response variable (Ey) and corresponding
+# predictor values
+sdmdata <- data.frame(cbind(Ey, rbind(presvals, absvals)))
+head(sdmdata)
+```
+
+    ##   Ey MAT MTWQ MTCQ  MAP
+    ## 1  1 111  185   44 1378
+    ## 2  1 111  156   70 1819
+    ## 3  1  52  127   -6 1180
+    ## 4  1 111  156   70 2003
+    ## 5  1  99  158   48 1793
+    ## 6  1  NA   NA   NA   NA
+
+``` r
+# Collinearity can cause problems in Species Distribution Models. My understanding
+# is that if two or more predictors are collinear across the environmental space, then 
+# it's difficult to determine which predictor is actually influencing the distribution
+# of the species (if not both). If the predictors are not collinear in the areas
+# to which the SDM is projected then the model won't know how to assign probability
+# of habitat suitability to the independent predictors
+# We can do this by visually inspecting collinearity with a scatterplot matrix
+pairs(sdmdata[,2:length(sdmdata)], cex = 0.1, fig=TRUE)
+```
+
+![](README_files/figure-markdown_github/SDM%20prep-1.png)
+
+``` r
+# MAT and MTWQ appear to be collinear across this area!
+# There are more quantitative assessments of collinearity (like using the Variance Inlation Factor, see https://www.rdocumentation.org/packages/car/versions/3.0-9/topics/vif) that I won't do here
+
+# So let's remove MAT and try again
+predictors <- raster::subset(bioclim.stack, c("MTWQ", "MTCQ", "MAP"))
+presvals <- raster::extract(predictors, dc.df)
+backgr <- randomPoints(predictors, 500)
+absvals <- raster::extract(predictors, backgr)
+Ey <- c(rep(1, nrow(presvals)), rep(0, nrow(absvals)))
+sdmdata <- data.frame(cbind(Ey, rbind(presvals, absvals)))
+
+pairs(sdmdata[,2:length(sdmdata)], cex = 0.1, fig=TRUE)
+```
+
+![](README_files/figure-markdown_github/SDM%20prep-2.png)
+
+``` r
+# Better! 
+```
