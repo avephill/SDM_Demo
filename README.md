@@ -28,8 +28,8 @@ library(dismo)
 library(sdm)
 ```
 
-Prepare occurrence data
-=======================
+Prepare species occurrence data
+===============================
 
 We’ll use the west coast carnivorous plant, [*Darlingtonia
 californica*](https://en.wikipedia.org/wiki/Darlingtonia_californica),
@@ -73,15 +73,7 @@ head(dc.df)
 
 ``` r
 # Let's ready some political boundaries in for visualization
-usa.shp <- readOGR("USA")
-```
-
-    ## OGR data source with driver: ESRI Shapefile 
-    ## Source: "/home/avery/SDM_Demo/USA", layer: "USA"
-    ## with 400 features
-    ## It has 5 fields
-
-``` r
+usa.shp <- readOGR("USA", verbose=F)
 CA_OR.shp <- usa.shp[usa.shp@data$NAME %in% c("California", "Oregon"),]
 
 # Let's take a look at our raw occurrence points
@@ -90,3 +82,36 @@ points(dc.df$lon, dc.df$lat)
 ```
 
 ![](README_files/figure-markdown_github/occurrence%20data-1.png)
+
+Prepare environmental predictor data
+====================================
+
+``` r
+# Download bioclimatic variables from worldclim
+# run ??getData to see other options for climate data
+bioclim_global.stack <- raster::getData(name = "worldclim",
+                        var = 'bio', 
+                        res = 2.5)
+
+# This replaces bioX name with more descriptive acronym
+# We choose 4 climatic variables here more for examplary purposes than biologically
+# sound reasoning
+names(bioclim_global.stack)[names(bioclim_global.stack) %in% c("bio1", "bio10", "bio11", "bio12")] <- 
+  c("MAT", "MTWQ", "MTCQ", "MAP")
+
+# This crops the extent to Oregon and California
+bioclim.stack <- crop(bioclim_global.stack, extent(CA_OR.shp))
+
+# Let's only look at these 4 variables
+predictors <- raster::subset(bioclim.stack, c("MAT", "MTWQ", "MTCQ", "MAP"))
+# bio1 = Mean Annual Temperature (MAT)
+# bio10 = Mean Temperature of Warmest Quarter (MTWQ)
+# bio11 = Mean Temperature of Coldest Quarter (MTCQ)
+# bio12 = Annual Precipitation (MAP)
+# etc.
+
+# Let's see what Mean Annual temperature raster looks like
+sp::plot(predictors$MAT, main = "Mean Annual Temperature")
+```
+
+![](README_files/figure-markdown_github/predictor%20data-1.png)
