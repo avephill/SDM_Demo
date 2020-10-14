@@ -180,21 +180,6 @@ Ey <- Ey_calc(MTWQ_sorted)
 lines(MTWQ_sorted, Ey, lwd = 3, col = "red")
 legend("topright", legend = c("Linear Model", "GLM Model"), col = c("blue", "red"), lty=1, lwd = 3)
 
-# In practice, GLM SDMs are made using machine learning, which makes 
-# many versions with slight tweaks to LP and equations that relate the dif. 
-# predictor responses. Here's a tweak to the LP:
-Ey_calc2 <- function(x){
-  y_int <- as.numeric(sdm_glm$coefficients["(Intercept)"])
-  m <- as.numeric(sdm_glm$coefficients["MTWQ"])
-  LP = m*x + x^.05 + y_int
-  return(exp(LP) / (1 + exp(LP)))
-}
-Ey <- Ey_calc2(MTWQ_sorted)
-
-lines(MTWQ_sorted, Ey, lwd = 3, col = "green")
-legend("topright", legend = c("Linear Model", "GLM Model", "GLM Model 2"), 
-       col = c("blue", "red", "green"), lty=1, lwd = 3)
-
 
 
 # Here's a function we'll use to plot SDM projections
@@ -210,7 +195,7 @@ prediction_glm <- raster::predict(bioclim.stack, sdm_glm)
 # we need to log transform it to give us the expected presence
 # We have g(E(x)), where E(x) = e^(LP) / (1 + e^LP)
 # where E(x) is expected presence or absence of species
-prediction_glm.Ey <- exp(prediction_glm) / (1+exp(prediction_glm))
+prediction_glm.Ey <- exp(prediction_glm) / (1 + exp(prediction_glm))
 
 par(mfrow=c(1,2))
 plot(MTWQ_sorted, Ey, lwd = 3, col = "green", type = 'l',
