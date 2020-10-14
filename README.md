@@ -29,8 +29,11 @@ library(sdm)
 library(usdm) # For vifstep function
 ```
 
-Prepare species occurrence data
-===============================
+Data Preparation
+================
+
+Species occurrence data
+-----------------------
 
 We’ll use the west coast carnivorous plant, [*Darlingtonia
 californica*](https://en.wikipedia.org/wiki/Darlingtonia_californica),
@@ -73,7 +76,7 @@ head(dc.df)
     ## 6 -120.8630 40.07212
 
 ``` r
-# Let's ready some political boundaries in for visualization
+# Let's read some political boundaries in for visualization
 usa.shp <- readOGR("USA", verbose=F)
 CA_OR.shp <- usa.shp[usa.shp@data$NAME %in% c("California", "Oregon"),]
 
@@ -84,8 +87,8 @@ points(dc.df$lon, dc.df$lat)
 
 ![](README_files/figure-markdown_github/occurrence%20data-1.png)
 
-Prepare environmental predictor data
-====================================
+Environmental predictor data
+----------------------------
 
 ``` r
 # Download bioclimatic variables from worldclim
@@ -118,8 +121,8 @@ sp::plot(predictors$MAT, main = "Mean Annual Temperature")
 
 ![](README_files/figure-markdown_github/predictor%20data-1.png)
 
-Build SDM-ready dataframe of predictor values and species presence/(pseudo)absence
-==================================================================================
+SDM-ready dataframe of predictor values and species presence/(pseudo)absence
+----------------------------------------------------------------------------
 
 ``` r
 # These are the predictor values at locations of species presence
@@ -180,14 +183,14 @@ vifstep(select(sdmdata, -Y), th=10)
     ## MAT 
     ## 
     ## After excluding the collinear variables, the linear correlation coefficients ranges between: 
-    ## min correlation ( MAP ~ MTCQ ):  0.2493844 
-    ## max correlation ( MTCQ ~ MTWQ ):  0.6157952 
+    ## min correlation ( MAP ~ MTCQ ):  0.2449545 
+    ## max correlation ( MTCQ ~ MTWQ ):  0.6056576 
     ## 
     ## ---------- VIFs of the remained variables -------- 
     ##   Variables      VIF
-    ## 1      MTWQ 5.669098
-    ## 2      MTCQ 4.581753
-    ## 3       MAP 3.752748
+    ## 1      MTWQ 6.146709
+    ## 2      MTCQ 4.793498
+    ## 3       MAP 4.140401
 
 ``` r
 # It appears that when MAT is removed. There aren't significant collinearity 
@@ -210,13 +213,13 @@ pairs(sdmdata[,2:length(sdmdata)], cex = 0.1, fig=TRUE)
 # Better! 
 ```
 
-Manual SDM
-==========
+Manual (base R) SDM
+===================
 
 Let’s do some SDMs using linear models and Generalized Linear Models–
 these are very rudimentary and not used in published papers, but I think
 these examples are important for understanding how some of the simplest
-SDMs (regression methods) generally work
+SDMs (under the family of regression methods) generally work
 
 Let’s start Modeling! Here’s the most basic regression SDM, a linear
 model
@@ -224,11 +227,19 @@ model
 Linear model
 ------------
 
-(*E*<sub>*Y*</sub> = *m**x* + *b* + *e*) (*E*<sub>*Y*</sub>) is expected
-habitat suitability (*b*) = intercept (*m*) = coefficient (*x*) =
-predictor (*e*) = error
+*E*<sub>*Y*</sub> = *m* \* *x* + *b* + *e*
 
-Assumes: Normal distributed error mean = 0 Variance((*E*<sub>*Y*</sub>))
+*E*<sub>*Y*</sub> is expected habitat suitability
+
+*b* = intercept
+
+*m* = coefficient
+
+*x* = predictor
+
+*e* = error
+
+Assumes: Normal distributed error mean = 0 Variance(*E*<sub>*Y*</sub>)
 is constant
 
 ``` r
@@ -251,8 +262,11 @@ distributions.
 Generalized Linear Model SDM
 ----------------------------
 
-(*g*(*E*<sub>*Y*</sub>) = *L**P* = *m**x* + *b* + *e*) g() is link
-function LP = Linear Predictor
+*g*(*E*<sub>*Y*</sub>) = *L**P* = *m**x* + *b* + *e*
+
+*g*() is link function
+
+*L**P* = Linear Predictor
 
 GLMs Do not have to have: - normal distribution of error - homogenous
 variance Different link functions can be used, which each have their own
@@ -262,14 +276,13 @@ the same linear model as above using the glm() function
 
 ``` r
 plot(sdmdata$MTWQ, sdmdata$Y, 
-     main = "D. californica GLM SDM",
+     main = "D. californica Gaussian GLM SDM",
      xlab = "Mean Temp of Warmest Quarter",
      ylab = "Presence/Absence"
 )
 
 sdm_lm <- glm(Y ~ MTWQ, data = sdmdata, family = gaussian)
 abline(sdm_lm, lwd = 3, col = "blue")
-legend("topright", legend = c("Linear Model"), col = c("blue"), lty=1, lwd = 3)
 ```
 
 ![](README_files/figure-markdown_github/Gaussian%20GLM-1.png)
@@ -283,10 +296,14 @@ provide the *probability* of presence (arguably better interpreted as
 “habitat suitability”) as the response variable. This would give meaning
 to values between 1 and 0. We can do this with the logit link function.
 
-(*g*(*E*<sub>*Y*</sub>) = *L**P* = *m**x* + *b* + *e*)
-(*L**P* = *l**o**g*10(*E*<sub>*Y*</sub>/(1 − *E*<sub>*Y*</sub>))) solve
-for (*E*<sub>*Y*</sub>) Expanded Logit GLM:
-(*E*<sub>*Y*</sub> = *e*<sup>(</sup>*m**x* + *b* + *e*)/(1 + *e*<sup>(</sup>*m**x* + *b* + *e*)))
+*g*(*E*<sub>*Y*</sub>) = *L**P* = *m**x* + *b* + *e*
+
+*L**P* = *l**o**g*10(*E*<sub>*Y*</sub>/(1 − *E*<sub>*Y*</sub>))
+
+solve for *E*<sub>*Y*</sub>
+
+Expanded Logit GLM:
+*E*<sub>*Y*</sub> = *e*<sup>*m**x* + *b* + *e*</sup>/(1 + *e*<sup>*m**x* + *b* + *e*</sup>)
 
 ``` r
 sdm_glm <- glm(Y ~ MTWQ, data = sdmdata, family = binomial)
@@ -336,21 +353,23 @@ project.sdm(prediction_glm, "Logit GLM SDM (D. californica), MTWQ only")
 the raster legend shows values between -6 and 4. These aren’t
 probabilities! This happened because we’re plotting the logit
 transformed response variable
-(*g*(*E*<sub>*Y*</sub>) = *m**x* + *b* + *e*) where
-(*g*(*E*<sub>*Y*</sub>) = *l**o**g*10(*E*<sub>*Y*</sub>/(1 − *E*<sub>*Y*</sub>)))
-Solve for (*E*<sub>*Y*</sub>) to get the probability value between 0 and
+*g*(*E*<sub>*Y*</sub>) = *m**x* + *b* + *e* where
+*g*(*E*<sub>*Y*</sub>) = *l**o**g*10(*E*<sub>*Y*</sub>/(1 − *E*<sub>*Y*</sub>))
+Solve for *E*<sub>*Y*</sub> to get the probability value between 0 and
 1:
-(*E*<sub>*Y*</sub> = *e*<sup>(</sup>*g*(*E*<sub>*Y*</sub>)/(1 + *e*<sup>(</sup>*g*(*E*<sub>*Y*</sub>))))
+*E*<sub>*Y*</sub> = *e*<sup>(</sup>*g*(*E*<sub>*Y*</sub>)/(1 + *e*<sup>(</sup>*g*(*E*<sub>*Y*</sub>)))
 
 ``` r
 prediction_glm.Ey <- exp(prediction_glm) / (1 + exp(prediction_glm))
 project.sdm(prediction_glm.Ey, "Logit GLM SDM (D. californica), MTWQ only")
 ```
 
-![](README_files/figure-markdown_github/projection2-1.png) Looks like a
-real SDM! Although you can see that the model predicts high habitat
-suitability in areas where *D. californica* wasn’t actually observed.
-Maybe if we throw the other climatic predictors in it will help.
+![](README_files/figure-markdown_github/projection2-1.png)
+
+Looks like a real SDM! Although you can see that the model predicts high
+habitat suitability in areas where *D. californica* wasn’t actually
+observed. Maybe if we throw the other climatic predictors in it will
+help.
 
 ``` r
 sdm_glm2 <- glm(Y ~ MTWQ + MTCQ + MAP, data = sdmdata, family = binomial)
@@ -359,14 +378,16 @@ prediction_glm2.Ey <- exp(prediction_glm2) / (1+exp(prediction_glm2))
 project.sdm(prediction_glm2.Ey, "GLM SDM (D. californica)")
 ```
 
-![](README_files/figure-markdown_github/logitGLM2-1.png) Notice how the
-area where the model predicts high habitat suitability where there
-weren’t actual occurrences is much lower. We can still do better! Let’s
-begin looking at some of the explicit SDM packages and functions that
-are popular in R.
+![](README_files/figure-markdown_github/logitGLM2-1.png)
+
+Notice how the area where the model predicts high habitat suitability
+where there weren’t actual occurrences is much lower. We can still do
+better! Let’s begin looking at some of the explicit SDM packages and
+functions that are popular in R.
 
 Popular SDM methods
 ===================
 
-Rather than organize these methods by the 3 general categories of SDM 1.
-Profiling Methods: distance and envelope based methods
+Rather than organize these methods by the 3 general categories of SDM
+
+1.  Profiling Methods: distance and envelope based methods
