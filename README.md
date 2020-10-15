@@ -1,3 +1,36 @@
+-   [An overview of Species Distribution Modeling in
+    R](#an-overview-of-species-distribution-modeling-in-r)
+    -   [This demo was largely based on Hijmans & Elith, 2013, Franklin
+        2010 and the sdm and dismo documentation pages. The rspatial.org
+        SDM walkthrough is similar to this walkthrough– with more detail
+        but without illustration of some methods like discerning
+        predictor contribution and using the vifstep() function. This
+        document aims to provide a walkthrough of SDM and popular
+        implementations in R as of
+        Fall 2020.](#this-demo-was-largely-based-on-hijmans-elith-2013-franklin-2010-and-the-sdm-and-dismo-documentation-pages.-the-rspatial.org-sdm-walkthrough-is-similar-to-this-walkthrough-with-more-detail-but-without-illustration-of-some-methods-like-discerning-predictor-contribution-and-using-the-vifstep-function.-this-document-aims-to-provide-a-walkthrough-of-sdm-and-popular-implementations-in-r-as-of-fall-2020.)
+    -   [If you already have an understanding of the motivation of SDM,
+        continue here to learn more about implementation. If you’d like
+        a brief refresher on the motivation and general application of
+        SDM take a look at the powerpoint in this git
+        repository.](#if-you-already-have-an-understanding-of-the-motivation-of-sdm-continue-here-to-learn-more-about-implementation.-if-youd-like-a-brief-refresher-on-the-motivation-and-general-application-of-sdm-take-a-look-at-the-powerpoint-in-this-git-repository.)
+    -   [Feel free to download the sdm\_demo.R script, install the
+        necessary packages, and run and manipulate this code as you see
+        fit.](#feel-free-to-download-the-sdm_demo.r-script-install-the-necessary-packages-and-run-and-manipulate-this-code-as-you-see-fit.)
+-   [(A) Data Preparation](#a-data-preparation)
+    -   [Species occurrence data](#species-occurrence-data)
+    -   [Environmental predictor data](#environmental-predictor-data)
+    -   [SDM-ready dataframe of predictor values and species
+        presence/(pseudo)absence](#sdm-ready-dataframe-of-predictor-values-and-species-presencepseudoabsence)
+    -   [Collinearity of predictors](#collinearity-of-predictors)
+-   [(B) Manual (base R) SDM](#b-manual-base-r-sdm)
+    -   [Linear model](#linear-model)
+    -   [Generalized Linear Model SDM](#generalized-linear-model-sdm)
+-   [(C) Popular SDM methods in R](#c-popular-sdm-methods-in-r)
+    -   [dismo Package](#dismo-package)
+    -   [sdm Package](#sdm-package)
+-   [(D) Model Evaluation methodologies (coming
+    soon!)](#d-model-evaluation-methodologies-coming-soon)
+
 An overview of Species Distribution Modeling in R
 =================================================
 
@@ -143,16 +176,21 @@ SDM-ready dataframe of predictor values and species presence/(pseudo)absence
     ## 5 1  75  160   -2  956
     ## 6 1  86  172    6  915
 
-    # Collinearity can cause problems in Species Distribution Models. My understanding
-    # is that if two or more predictors are collinear across the environmental space, then 
-    # it's difficult to determine which predictor is actually influencing the distribution
-    # of the species (if not both). If the predictors are not collinear in the areas
-    # to which the SDM is projected then the model won't know how to assign probability
-    # of habitat suitability to the independent predictors
+Collinearity of predictors
+--------------------------
+
+Collinearity can cause problems in Species Distribution Models. My
+understanding is that if two or more predictors are collinear across the
+environmental space, then it’s difficult to determine which predictor is
+actually influencing the distribution of the species (if not both). If
+the predictors are not collinear in the areas to which the SDM is
+projected then the model won’t know how to assign probability of habitat
+suitability to the independent predictors
+
     # We can check for collinearity by visually inspecting a scatterplot matrix
     pairs(sdmdata[,2:length(sdmdata)], cex = 0.1, fig=TRUE)
 
-![](README_files/figure-gfm/SDM%20prep-1.png)<!-- -->
+![](README_files/figure-gfm/collinearity-1.png)<!-- -->
 
     # MAT and MTWQ appear to be collinear across this area!
     # There are more quantitative assessments of collinearity (like using the Variance Inlation Factor)
@@ -167,14 +205,14 @@ SDM-ready dataframe of predictor values and species presence/(pseudo)absence
     ## MAT 
     ## 
     ## After excluding the collinear variables, the linear correlation coefficients ranges between: 
-    ## min correlation ( MAP ~ MTCQ ):  0.2056594 
-    ## max correlation ( MTCQ ~ MTWQ ):  0.6378604 
+    ## min correlation ( MAP ~ MTCQ ):  0.2209405 
+    ## max correlation ( MTCQ ~ MTWQ ):  0.6387641 
     ## 
     ## ---------- VIFs of the remained variables -------- 
     ##   Variables      VIF
-    ## 1      MTWQ 6.716486
-    ## 2      MTCQ 5.108818
-    ## 3       MAP 4.159715
+    ## 1      MTWQ 6.352525
+    ## 2      MTCQ 4.996900
+    ## 3       MAP 3.953563
 
     # It appears that when MAT is removed. There aren't significant collinearity 
     # problems among the predictors
@@ -189,7 +227,7 @@ SDM-ready dataframe of predictor values and species presence/(pseudo)absence
 
     pairs(sdmdata[,2:length(sdmdata)], cex = 0.1, fig=TRUE)
 
-![](README_files/figure-gfm/SDM%20prep-2.png)<!-- -->
+![](README_files/figure-gfm/collinearity-2.png)<!-- -->
 
     # Better! 
 
@@ -482,15 +520,15 @@ getmethodNames() to see all possible methods
     ## ---------------------------------------------- 
     ## Based on Correlation metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : ********************* (41.8 %) 
-    ## MTCQ                : ****** (12.9 %) 
-    ## MAP                 : ******************* (38.4 %) 
+    ## MTWQ                : ********** (19.9 %) 
+    ## MTCQ                : *** (5.4 %) 
+    ## MAP                 : ******************************** (64.9 %) 
     ## ============================================================= 
     ## Based on AUC metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : **************** (33 %) 
-    ## MTCQ                : ****** (11.3 %) 
-    ## MAP                 : ************** (28.7 %) 
+    ## MTWQ                : ******** (15.5 %) 
+    ## MTCQ                : ** (4.7 %) 
+    ## MAP                 : ************************** (52.5 %) 
     ## =============================================================
 
     # Let's try GAM, a regression method
@@ -516,15 +554,15 @@ getmethodNames() to see all possible methods
     ## ---------------------------------------------- 
     ## Based on Correlation metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : ************ (24.4 %) 
-    ## MTCQ                : ****************** (36.3 %) 
-    ## MAP                 : ************************* (49.1 %) 
+    ## MTWQ                : ************** (28 %) 
+    ## MTCQ                : ********************* (42.2 %) 
+    ## MAP                 : ********************** (43.2 %) 
     ## ============================================================= 
     ## Based on AUC metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : ******* (14.4 %) 
-    ## MTCQ                : ****************** (35.8 %) 
-    ## MAP                 : ******************** (39.6 %) 
+    ## MTWQ                : ********* (18.2 %) 
+    ## MTCQ                : **************** (31.1 %) 
+    ## MAP                 : ************************ (49 %) 
     ## =============================================================
 
     # Let's try Random Forest, which is a machine learning method
@@ -550,15 +588,15 @@ getmethodNames() to see all possible methods
     ## ---------------------------------------------- 
     ## Based on Correlation metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : ********** (20 %) 
-    ## MTCQ                : ********** (20.2 %) 
-    ## MAP                 : ************************** (51.8 %) 
+    ## MTWQ                : ********** (19.2 %) 
+    ## MTCQ                : *********** (22.3 %) 
+    ## MAP                 : ************************** (52 %) 
     ## ============================================================= 
     ## Based on AUC metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : ****** (11.8 %) 
-    ## MTCQ                : ****** (12.8 %) 
-    ## MAP                 : ********************** (44.4 %) 
+    ## MTWQ                : ***** (9.7 %) 
+    ## MTCQ                : ****** (12.3 %) 
+    ## MAP                 : ********************** (44.5 %) 
     ## =============================================================
 
     # ENSEMBLE let's make an ensemble model of all of them
@@ -587,15 +625,15 @@ getmethodNames() to see all possible methods
     ## ---------------------------------------------- 
     ## Based on Correlation metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : *******[*******-----] (29.1 %) 
-    ## MTCQ                : ****[*******------] (23.5 %) 
-    ## MAP                 : *******************[***---] (46.2 %) 
+    ## MTWQ                : *******[***--] (22.3 %) 
+    ## MTCQ                : [**********---------] (22.7 %) 
+    ## MAP                 : ********************[******----] (53.1 %) 
     ## ============================================================= 
     ## Based on AUC metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : **[*******------] (19.8 %) 
-    ## MTCQ                : *[********-------] (20.4 %) 
-    ## MAP                 : **************[****---] (38.6 %) 
+    ## MTWQ                : ****[**--] (14.6 %) 
+    ## MTCQ                [********------] (15.5 %) 
+    ## MAP                 : *********************[**-] (47.9 %) 
     ## =============================================================
 
 (D) Model Evaluation methodologies (coming soon!)
