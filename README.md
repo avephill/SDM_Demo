@@ -167,14 +167,14 @@ SDM-ready dataframe of predictor values and species presence/(pseudo)absence
     ## MAT 
     ## 
     ## After excluding the collinear variables, the linear correlation coefficients ranges between: 
-    ## min correlation ( MAP ~ MTCQ ):  0.1811388 
-    ## max correlation ( MTCQ ~ MTWQ ):  0.6354272 
+    ## min correlation ( MAP ~ MTCQ ):  0.2219528 
+    ## max correlation ( MTCQ ~ MTWQ ):  0.5938187 
     ## 
     ## ---------- VIFs of the remained variables -------- 
     ##   Variables      VIF
-    ## 1      MTWQ 5.590315
-    ## 2      MTCQ 4.215618
-    ## 3       MAP 3.446200
+    ## 1      MTWQ 4.899459
+    ## 2      MTCQ 3.773858
+    ## 3       MAP 3.336157
 
     # It appears that when MAT is removed. There aren't significant collinearity 
     # problems among the predictors
@@ -207,9 +207,9 @@ model
 Linear model
 ------------
 
-*E*<sub>*Y*</sub> = *m**x* + *b* + *e*
+*E*<sub>*Y*</sub> = *m* \* *x* + *b* + *e*
 
-*E*<sub>*Y*</sub> is expected habitat suitability
+*E*<sub>*Y*</sub> = expected habitat suitability
 
 *b* = intercept
 
@@ -239,11 +239,11 @@ and we know that other climatic variables impact species distributions.
 Generalized Linear Model SDM
 ----------------------------
 
-*g*(*E*<sub>*Y*</sub>) = *L**P* = *m**x* + *b* + *e*
+*g*(*E*<sub>*Y*</sub>) = *L* = *m* \* *x* + *b* + *e*
 
 *g*() is link function
 
-*L**P* = Linear Predictor
+*L* = Linear Predictor
 
 GLMs Do not have to have: - normal distribution of error - homogenous
 variance Different link functions can be used, which each have their own
@@ -271,14 +271,14 @@ provide the *probability* of presence (arguably better interpreted as
 “habitat suitability”) as the response variable. This would give meaning
 to values between 1 and 0. We can do this with the logit link function.
 
-*g*(*E*<sub>*Y*</sub>) = *L**P* = *m**x* + *b* + *e*
+*g*(*E*<sub>*Y*</sub>) = *L* = *m* \* *x* + *b* + *e*
 
-*L**P* = *l**o**g*10(*E*<sub>*Y*</sub>/(1 − *E*<sub>*Y*</sub>))
+$L = log10(\\frac{E\_Y}{1 - E\_Y})$
 
 solve for *E*<sub>*Y*</sub>
 
 Expanded Logit GLM:
-*E*<sub>*Y*</sub> = *e*<sup>*m**x* + *b* + *e*</sup>/(1 + *e*<sup>*m**x* + *b* + *e*</sup>)
+*E*<sub>*Y*</sub> = *e*<sup>*m* \* *x* + *b* + *e*</sup>/(1 + *e*<sup>*m* \* *x* + *b* + *e*</sup>)
 
     sdm_glm <- glm(Y ~ MTWQ, data = sdmdata, family = binomial)
     # This is the expanded logit GLM equation, written as an R function
@@ -325,7 +325,7 @@ environment from raster files and using our GLM to predict the
 Notice how the raster legend shows values between -6 and 4. These aren’t
 probabilities! This happened because we’re plotting the logit
 transformed response variable
-*g*(*E*<sub>*Y*</sub>) = *m**x* + *b* + *e* where
+*g*(*E*<sub>*Y*</sub>) = *m* \* *x* + *b* + *e* where
 *g*(*E*<sub>*Y*</sub>) = *l**o**g*10(*E*<sub>*Y*</sub>/(1 − *E*<sub>*Y*</sub>))
 Solve for *E*<sub>*Y*</sub> to get the probability value between 0 and
 1:
@@ -482,15 +482,15 @@ getmethodNames() to see all possible methods
     ## ---------------------------------------------- 
     ## Based on Correlation metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : ***** (10.8 %) 
-    ## MTCQ                :  (0.8 %) 
-    ## MAP                 : *************************************** (77.3 %) 
+    ## MTWQ                : ********************** (44 %) 
+    ## MTCQ                : ***** (9.6 %) 
+    ## MAP                 : ****************** (36.7 %) 
     ## ============================================================= 
     ## Based on AUC metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : **** (7.9 %) 
-    ## MTCQ                :  (0.9 %) 
-    ## MAP                 : ****************************** (60.2 %) 
+    ## MTWQ                : ***************** (34.6 %) 
+    ## MTCQ                : **** (8.1 %) 
+    ## MAP                 : ************** (27.7 %) 
     ## =============================================================
 
     # Let's try GAM, a regression method
@@ -516,15 +516,15 @@ getmethodNames() to see all possible methods
     ## ---------------------------------------------- 
     ## Based on Correlation metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : ******* (14.8 %) 
-    ## MTCQ                : **************** (31 %) 
-    ## MAP                 : *************************** (54.2 %) 
+    ## MTWQ                : ************ (24.1 %) 
+    ## MTCQ                : ****************** (35.8 %) 
+    ## MAP                 : ****************************** (59.7 %) 
     ## ============================================================= 
     ## Based on AUC metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : **** (8.7 %) 
-    ## MTCQ                : ************* (25.7 %) 
-    ## MAP                 : *********************** (45.5 %) 
+    ## MTWQ                : ******** (15.3 %) 
+    ## MTCQ                : ************** (27.1 %) 
+    ## MAP                 : ******************************** (64.5 %) 
     ## =============================================================
 
     # Let's try Random Forest, which is a machine learning method
@@ -550,15 +550,15 @@ getmethodNames() to see all possible methods
     ## ---------------------------------------------- 
     ## Based on Correlation metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : ********* (18 %) 
-    ## MTCQ                : ********** (19.1 %) 
-    ## MAP                 : **************************** (55.1 %) 
+    ## MTWQ                : *********** (21.1 %) 
+    ## MTCQ                : ********** (19.4 %) 
+    ## MAP                 : *************************** (53.3 %) 
     ## ============================================================= 
     ## Based on AUC metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : ***** (9.8 %) 
-    ## MTCQ                : ****** (11.5 %) 
-    ## MAP                 : ************************ (48.8 %) 
+    ## MTWQ                : ****** (11.8 %) 
+    ## MTCQ                : ***** (10.7 %) 
+    ## MAP                 : *********************** (46.5 %) 
     ## =============================================================
 
     # ENSEMBLE let's make an ensemble model of all of them
@@ -587,15 +587,15 @@ getmethodNames() to see all possible methods
     ## ---------------------------------------------- 
     ## Based on Correlation metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : ****[**-] (14.4 %) 
-    ## MTCQ                [********--------] (16.9 %) 
-    ## MAP                 : ***********************[*******-------] (62.8 %) 
+    ## MTWQ                : *******[*******------] (29.6 %) 
+    ## MTCQ                : **[********------] (21.6 %) 
+    ## MAP                 : *****************[******-----] (48.5 %) 
     ## ============================================================= 
     ## Based on AUC metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : ***[] (8.4 %) 
-    ## MTCQ               [: ******-------] (12.7 %) 
-    ## MAP                 : *********************[****---] (51.9 %) 
+    ## MTWQ                : **[*******------] (20 %) 
+    ## MTCQ                : [*******-----] (15.1 %) 
+    ## MAP                 : ************[*********---------] (44.6 %) 
     ## =============================================================
 
 Model Evaluation methodologies coming soon!
