@@ -1,7 +1,7 @@
 An overview of Species Distribution Modeling in R
 =================================================
 
-### This demo was largely based on [Hijmans & Elith, 2013](https://cran.r-project.org/web/packages/dismo/vignettes/sdm.pdf), [Franklin 2010](https://doi.org/10.1017/CBO9780511810602) and the [sdm](https://cran.r-project.org/web/packages/sdm/sdm.pdf) and [dismo](https://cran.r-project.org/web/packages/dismo/dismo.pdf) documentation pages. This serves to provide a walkthrough of SDM and popular implementations in R as of Fall 2020. I’ve included the extent of my understanding of how the different methods work.
+### This demo was largely based on [Hijmans & Elith, 2013](https://cran.r-project.org/web/packages/dismo/vignettes/sdm.pdf), [Franklin 2010](https://doi.org/10.1017/CBO9780511810602) and the [sdm](https://cran.r-project.org/web/packages/sdm/sdm.pdf) and [dismo](https://cran.r-project.org/web/packages/dismo/dismo.pdf) documentation pages. The [rspatial.org SDM walkthrough](https://rspatial.org/raster/sdm/1_sdm_introduction.html) is similar to this walkthrough– with more detail but without illustration of some methods like discerning predictor contribution and using the vifstep() function. This document aims to provide a walkthrough of SDM and popular implementations in R as of Fall 2020.
 
 ### If you already have an understanding of the motivation of SDM, continue here to learn more about implementation. If you’d like a brief refresher on the motivation and general application of SDM take a look at the powerpoint in this git repository.
 
@@ -29,8 +29,8 @@ library(sdm)
 library(usdm) # For vifstep function
 ```
 
-Data Preparation
-================
+1. Data Preparation
+===================
 
 Species occurrence data
 -----------------------
@@ -183,14 +183,14 @@ vifstep(select(sdmdata, -Y), th=10)
     ## MAT 
     ## 
     ## After excluding the collinear variables, the linear correlation coefficients ranges between: 
-    ## min correlation ( MAP ~ MTCQ ):  0.2449545 
-    ## max correlation ( MTCQ ~ MTWQ ):  0.6056576 
+    ## min correlation ( MAP ~ MTCQ ):  0.2972874 
+    ## max correlation ( MTCQ ~ MTWQ ):  0.5968403 
     ## 
     ## ---------- VIFs of the remained variables -------- 
     ##   Variables      VIF
-    ## 1      MTWQ 6.146709
-    ## 2      MTCQ 4.793498
-    ## 3       MAP 4.140401
+    ## 1      MTWQ 5.147456
+    ## 2      MTCQ 4.437575
+    ## 3       MAP 3.635108
 
 ``` r
 # It appears that when MAT is removed. There aren't significant collinearity 
@@ -213,8 +213,8 @@ pairs(sdmdata[,2:length(sdmdata)], cex = 0.1, fig=TRUE)
 # Better! 
 ```
 
-Manual (base R) SDM
-===================
+2. Manual (base R) SDM
+======================
 
 Let’s do some SDMs using linear models and Generalized Linear Models–
 these are very rudimentary and not used in published papers, but I think
@@ -227,7 +227,7 @@ model
 Linear model
 ------------
 
-*E*<sub>*Y*</sub> = *m* \* *x* + *b* + *e*
+*E*<sub>*Y*</sub> = *m**x* + *b* + *e*
 
 *E*<sub>*Y*</sub> is expected habitat suitability
 
@@ -349,8 +349,9 @@ prediction_glm <- raster::predict(bioclim.stack, sdm_glm)
 project.sdm(prediction_glm, "Logit GLM SDM (D. californica), MTWQ only")
 ```
 
-![](README_files/figure-markdown_github/projection1-1.png) Notice how
-the raster legend shows values between -6 and 4. These aren’t
+![](README_files/figure-markdown_github/projection1-1.png)
+
+Notice how the raster legend shows values between -6 and 4. These aren’t
 probabilities! This happened because we’re plotting the logit
 transformed response variable
 *g*(*E*<sub>*Y*</sub>) = *m**x* + *b* + *e* where
@@ -382,12 +383,280 @@ project.sdm(prediction_glm2.Ey, "GLM SDM (D. californica)")
 
 Notice how the area where the model predicts high habitat suitability
 where there weren’t actual occurrences is much lower. We can still do
-better! Let’s begin looking at some of the explicit SDM packages and
-functions that are popular in R.
+better! Let’s begin looking at some of the SDM packages and functions
+that are popular in R.
 
-Popular SDM methods
-===================
+3. Popular SDM methods in R
+===========================
 
-Rather than organize these methods by the 3 general categories of SDM
+There are 3 general classes of SDM methods:
 
-1.  Profiling Methods: distance and envelope based methods
+1.  Profiling Methods: distance and environmental envelope based
+    methods. Includes BIOCLIM, DOMAIN, and Mahalanobis.
+2.  Regression Methods: uses regression-based methods to model the
+    relationship between predictors and occurences. Includes GLM, GAM,
+    and MARS
+3.  Machine Learning Methods: Includes Artificial Neural Networks,
+    Boosted Regression Trees, Random Forest, and Support Vector Machines
+
+Instead of organizing this section by these different algorithms, as
+rspatial.org does, I will structure this based on some of the most
+popular SDM R packages: **sdm** and **dismo**
+
+dismo Package
+-------------
+
+I think that **dismo** is the most popular SDM package after querying
+the number of package downloads using the
+[dlstats](https://cran.r-project.org/web/packages/dlstats/vignettes/dlstats.html)
+package SDM algorithms included within the **dismo** package include:
+BIOCLIM, DOMAIN, MaxEnt. Note that these are all presence-only
+algorithms Also included in the package are functions to
+
+-   evaluate model fit
+-   test the importance of particular variables
+-   produce bioclim variables from monthly climate data (like CMIP5)
+-   calculate niche equivalency, niche overlap
+-   find the best predicted presence/absence threshold based on chosen
+    accuracy metrics
+
+``` r
+# BIOCLIM
+# One of the oldest models, and a profiling method.
+# It puts a convex hull around all the points in n-dimensional niche space
+# Not very powerful at extrapolation
+# Input = predictor values at locations where the species is present
+sdm_bioclim <- bioclim(presvals)
+# Look at the relationship between predicted value and each predictor
+response(sdm_bioclim)
+```
+
+![](README_files/figure-markdown_github/dismopackage-1.png)
+
+``` r
+prediction_bioclim <- dismo::predict(sdm_bioclim, bioclim.stack)
+project.sdm(prediction_bioclim, "BIOCLIM SDM (D. californica)")
+```
+
+![](README_files/figure-markdown_github/dismopackage-2.png)
+
+``` r
+# MaxEnt
+# The most popular SDM method, uses the machine learning algorithm maximum entropy.
+# Need to install maxent (https://biodiversityinformatics.amnh.org/open_source/maxent/)
+# and place it here:
+system.file("java", package="dismo")
+```
+
+    ## [1] "/home/avery/.R/library/dismo/java"
+
+``` r
+# Input = rasterstack or brick of predictors and the lon/lat of species occurrences
+sdm_maxent <- maxent(predictors, dc.df)
+prediction_maxent <- dismo::predict(sdm_maxent, bioclim.stack)
+project.sdm(prediction_maxent, "MaxEnt SDM (D. californica)")
+```
+
+![](README_files/figure-markdown_github/dismopackage-3.png)
+
+``` r
+# Look at response for each predictor
+response(sdm_maxent)
+```
+
+![](README_files/figure-markdown_github/dismopackage-4.png)
+
+``` r
+# Look at variable contribution for maxent
+sp::plot(sdm_maxent)
+```
+
+![](README_files/figure-markdown_github/dismopackage-5.png)
+
+``` r
+# Make an ensemble model! Many researchers end up averaging the results of different
+# models and then, if the model accuracy is better, using the average as 
+# an ensemble model
+ensemble_bioclim.maxent <- mean(prediction_bioclim, prediction_maxent)
+sp::plot(ensemble_bioclim.maxent, main = "MaxEnt BIOCLIM ensemble")
+points(dc.df, pch = 16, cex = .2)
+legend("bottomright", legend = "obs. occurrences", pch = 16)
+```
+
+![](README_files/figure-markdown_github/dismopackage-6.png)
+
+sdm Package
+-----------
+
+It seems to me that **sdm** can implement all algorithms that **dismo**
+can, plus many more SDM algorithms included within the **sdm** package
+(after running the function installAll()) include: GLM, GAM, Gradient
+Boosting, Random Forest, MARS, Support Vector Machines, MaxEnt,
+Mahalanobis distance, DOMAIN, BIOCLIM, Maximum Likelihood You can use
+getmethodNames() to see all possible methods
+
+``` r
+# First we need to prep the data in a particular way to be compatible with sdm functions
+sdm.pkg.df_pres <- cbind(dc.df, presvals)
+sdm.pkg.df_pres$Y <- 1
+names(sdm.pkg.df_pres)[1:2] <- c("x", "y")
+sdm.pkg.df_abs <- data.frame(cbind(backgr, absvals))
+sdm.pkg.df_abs$Y <- 0
+sdmdf_sdmpkg <- rbind(sdm.pkg.df_pres, sdm.pkg.df_abs)
+sdmdata_sdmpkg <- sdmData(Y ~ MTWQ + MTCQ + MAP, train = sdmdf_sdmpkg)
+
+# Run a GLM model using the sdm package
+sdm_ml.glm <- sdm::sdm(Y ~ MTWQ + MTCQ + MAP, data = sdmdata_sdmpkg, methods=c("glm"))
+prediction_ml.glm <- raster::predict(sdm_ml.glm, bioclim.stack)
+project.sdm(prediction_ml.glm, "GLM SDM (D. californica)")
+```
+
+![](README_files/figure-markdown_github/sdmpackage-1.png)
+
+``` r
+# Use this function to determine which variables were more important
+getVarImp(sdm_ml.glm)
+```
+
+    ## 
+    ## The values of relative variable importance are generated from 1 models...
+
+    ## Relative Variable Importance 
+    ## ============================================================= 
+    ## method              : Permutation based on two metrics (Pearson Correlation and AUC)
+    ## number of variables :  3 
+    ## variable names      :  MTWQ, MTCQ, MAP 
+    ## ============================================================= 
+    ## Relative variable importance 
+    ## ---------------------------------------------- 
+    ## Based on Correlation metric: 
+    ## ---------------------------------------------- 
+    ## MTWQ                : ****************** (36.5 %) 
+    ## MTCQ                : **** (8 %) 
+    ## MAP                 : *********************** (46.5 %) 
+    ## ============================================================= 
+    ## Based on AUC metric: 
+    ## ---------------------------------------------- 
+    ## MTWQ                : *************** (29 %) 
+    ## MTCQ                : *** (6.5 %) 
+    ## MAP                 : ***************** (34.5 %) 
+    ## =============================================================
+
+``` r
+# Let's try GAM, a regression method
+# Run the model and project
+sdm_ml.gam <- sdm::sdm(Y ~ MTWQ + MTCQ + MAP, data = sdmdata_sdmpkg, methods=c("gam"))
+prediction_ml.gam <- raster::predict(sdm_ml.gam, bioclim.stack)
+project.sdm(prediction_ml.gam, "GAM SDM (D. californica)")
+```
+
+![](README_files/figure-markdown_github/sdmpackage-2.png)
+
+``` r
+getVarImp(sdm_ml.gam)
+```
+
+    ## 
+    ## The values of relative variable importance are generated from 1 models...
+
+    ## Relative Variable Importance 
+    ## ============================================================= 
+    ## method              : Permutation based on two metrics (Pearson Correlation and AUC)
+    ## number of variables :  3 
+    ## variable names      :  MTWQ, MTCQ, MAP 
+    ## ============================================================= 
+    ## Relative variable importance 
+    ## ---------------------------------------------- 
+    ## Based on Correlation metric: 
+    ## ---------------------------------------------- 
+    ## MTWQ                : ***************** (33.5 %) 
+    ## MTCQ                : ******************** (40.4 %) 
+    ## MAP                 : ******************** (39.4 %) 
+    ## ============================================================= 
+    ## Based on AUC metric: 
+    ## ---------------------------------------------- 
+    ## MTWQ                : ********* (18.3 %) 
+    ## MTCQ                : ******************* (38.5 %) 
+    ## MAP                 : *************** (30.7 %) 
+    ## =============================================================
+
+``` r
+# Let's try Random Forest, which is a machine learning method
+# Run the model and project
+sdm_rf <- sdm::sdm(Y ~ MTWQ + MTCQ + MAP, data = sdmdata_sdmpkg, methods=c("rf"))
+prediction_rf <- raster::predict(sdm_rf, bioclim.stack)
+project.sdm(prediction_rf, "Random Forest SDM (D. californica)")
+```
+
+![](README_files/figure-markdown_github/sdmpackage-3.png)
+
+``` r
+getVarImp(sdm_rf)
+```
+
+    ## 
+    ## The values of relative variable importance are generated from 1 models...
+
+    ## Relative Variable Importance 
+    ## ============================================================= 
+    ## method              : Permutation based on two metrics (Pearson Correlation and AUC)
+    ## number of variables :  3 
+    ## variable names      :  MTWQ, MTCQ, MAP 
+    ## ============================================================= 
+    ## Relative variable importance 
+    ## ---------------------------------------------- 
+    ## Based on Correlation metric: 
+    ## ---------------------------------------------- 
+    ## MTWQ                : ********** (20.6 %) 
+    ## MTCQ                : ********** (20 %) 
+    ## MAP                 : ************************* (49.6 %) 
+    ## ============================================================= 
+    ## Based on AUC metric: 
+    ## ---------------------------------------------- 
+    ## MTWQ                : ******* (13.3 %) 
+    ## MTCQ                : ****** (12.1 %) 
+    ## MAP                 : ********************* (41.4 %) 
+    ## =============================================================
+
+``` r
+# ENSEMBLE let's make an ensemble model of all of them
+# a number of methods can be used, see documentation, but they include 
+# weighted mean, unweighted mean, median, entropy, etc
+sdm_glm.gam.rf <- sdm::sdm(Y ~ MTWQ + MTCQ + MAP, data = sdmdata_sdmpkg, methods=c("glm","gam","rf"))
+sdm_ensemble <- sdm::ensemble(sdm_glm.gam.rf, bioclim.stack, 
+                              setting=list(method="weighted", stat="TSS"))
+project.sdm(sdm_ensemble, "Ensemble (D. californica)")
+```
+
+![](README_files/figure-markdown_github/sdmpackage-4.png)
+
+``` r
+getVarImp(sdm_glm.gam.rf)
+```
+
+    ## 
+    ## The variable importance for all the models are combined (averaged)...
+
+    ## Relative Variable Importance List 
+    ## ============================================================= 
+    ## method              : Permutation based on two metrics (Pearson Correlation and AUC)
+    ## number of variables :  3 
+    ## variable names      :  MTWQ, MTCQ, MAP 
+    ## number of models    :  3 
+    ## ============================================================= 
+    ## Summary of relative variable importance 
+    ## ---------------------------------------------- 
+    ## Based on Correlation metric: 
+    ## ---------------------------------------------- 
+    ## MTWQ                : *********[*****----] (30.1 %) 
+    ## MTCQ                : *[*********--------] (22.9 %) 
+    ## MAP                 : ******************[****--] (45.5 %) 
+    ## ============================================================= 
+    ## Based on AUC metric: 
+    ## ---------------------------------------------- 
+    ## MTWQ                : *****[****----] (20.6 %) 
+    ## MTCQ                [*********---------] (18.9 %) 
+    ## MAP                 : *************[****----] (36.4 %) 
+    ## =============================================================
+
+Model Evaluation methodologies coming soon!
