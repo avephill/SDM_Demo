@@ -167,14 +167,14 @@ SDM-ready dataframe of predictor values and species presence/(pseudo)absence
     ## MAT 
     ## 
     ## After excluding the collinear variables, the linear correlation coefficients ranges between: 
-    ## min correlation ( MAP ~ MTCQ ):  0.2757352 
-    ## max correlation ( MTCQ ~ MTWQ ):  0.6024657 
+    ## min correlation ( MAP ~ MTCQ ):  0.2056594 
+    ## max correlation ( MTCQ ~ MTWQ ):  0.6378604 
     ## 
     ## ---------- VIFs of the remained variables -------- 
     ##   Variables      VIF
-    ## 1      MTWQ 5.234166
-    ## 2      MTCQ 4.382370
-    ## 3       MAP 3.608718
+    ## 1      MTWQ 6.716486
+    ## 2      MTCQ 5.108818
+    ## 3       MAP 4.159715
 
     # It appears that when MAT is removed. There aren't significant collinearity 
     # problems among the predictors
@@ -272,7 +272,8 @@ provide the *probability* of presence (arguably better interpreted as
 to values between 1 and 0. We can do this with the logit link function.
 
 *g*(*E*<sub>*Y*</sub>) = *L* = *m* \* *x* + *b* + *e*
-$\\frac{E\_Y}{1 - E\_Y}$ $L = log10(\\frac{E\_Y}{1 - E\_Y})$
+
+*L* = *l**o**g*10(*E*<sub>*Y*</sub>/(1 − *E*<sub>*Y*</sub>))
 
 solve for *E*<sub>*Y*</sub>
 
@@ -309,7 +310,7 @@ environment from raster files and using our GLM to predict the
     project.sdm <- function(prediction, plotName){
       sp::plot(prediction, main = plotName)
       sp::plot(CA_OR.shp, add = T)
-      points(dc.df, pch = 16, cex = .2)
+      points(dc.df, pch = 16, cex = .4)
       legend("bottomright", legend = "D. californica occ.", pch = 16, cex=.4)
     }
 
@@ -328,7 +329,7 @@ transformed response variable
 *g*(*E*<sub>*Y*</sub>) = *l**o**g*10(*E*<sub>*Y*</sub>/(1 − *E*<sub>*Y*</sub>))
 Solve for *E*<sub>*Y*</sub> to get the probability value between 0 and
 1:
-*E*<sub>*Y*</sub> = *e*<sup>*g*(*E*<sub>*Y*</sub>)</sup>/(1 + *e*<sup>*g*(*E*<sub>*Y*</sub>)</sup>
+*E*<sub>*Y*</sub> = *e*<sup>*g*(*E*<sub>*Y*</sub>)</sup>/(1 + *e*<sup>*g*(*E*<sub>*Y*</sub>)</sup>)
 
     prediction_glm.Ey <- exp(prediction_glm) / (1 + exp(prediction_glm))
     project.sdm(prediction_glm.Ey, "Logit GLM SDM (D. californica), MTWQ only")
@@ -357,12 +358,12 @@ that are popular in R.
 
 There are 3 general classes of SDM methods:
 
-1.  Profiling Methods: distance and environmental envelope based
+1.  **Profiling Methods**: distance and environmental envelope based
     methods. Includes BIOCLIM, DOMAIN, and Mahalanobis.
-2.  Regression Methods: uses regression-based methods to model the
+2.  **Regression Methods**: uses regression-based methods to model the
     relationship between predictors and occurences. Includes GLM, GAM,
     and MARS
-3.  Machine Learning Methods: Includes Artificial Neural Networks,
+3.  **Machine Learning Methods**: Includes Artificial Neural Networks,
     Boosted Regression Trees, Random Forest, and Support Vector Machines
 
 Instead of organizing this section by these different algorithms, as
@@ -434,7 +435,7 @@ algorithms Also included in the package are functions to
     # an ensemble model
     ensemble_bioclim.maxent <- mean(prediction_bioclim, prediction_maxent)
     sp::plot(ensemble_bioclim.maxent, main = "MaxEnt BIOCLIM ensemble")
-    points(dc.df, pch = 16, cex = .2)
+    points(dc.df, pch = 16, cex = .4)
     legend("bottomright", legend = "obs. occurrences", pch = 16)
 
 ![](README_files/figure-gfm/dismopackage-6.png)<!-- -->
@@ -481,15 +482,15 @@ getmethodNames() to see all possible methods
     ## ---------------------------------------------- 
     ## Based on Correlation metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : **************** (32 %) 
-    ## MTCQ                : *** (5.9 %) 
-    ## MAP                 : ************************* (49.6 %) 
+    ## MTWQ                : ********************* (41.8 %) 
+    ## MTCQ                : ****** (12.9 %) 
+    ## MAP                 : ******************* (38.4 %) 
     ## ============================================================= 
     ## Based on AUC metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : ************* (26.2 %) 
-    ## MTCQ                : ** (4.9 %) 
-    ## MAP                 : ****************** (36.4 %) 
+    ## MTWQ                : **************** (33 %) 
+    ## MTCQ                : ****** (11.3 %) 
+    ## MAP                 : ************** (28.7 %) 
     ## =============================================================
 
     # Let's try GAM, a regression method
@@ -515,15 +516,15 @@ getmethodNames() to see all possible methods
     ## ---------------------------------------------- 
     ## Based on Correlation metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : ************** (28.6 %) 
-    ## MTCQ                : ***************** (34.2 %) 
-    ## MAP                 : ********************* (42.2 %) 
+    ## MTWQ                : ************ (24.4 %) 
+    ## MTCQ                : ****************** (36.3 %) 
+    ## MAP                 : ************************* (49.1 %) 
     ## ============================================================= 
     ## Based on AUC metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : ******** (17 %) 
-    ## MTCQ                : ***************** (34.4 %) 
-    ## MAP                 : **************** (31.6 %) 
+    ## MTWQ                : ******* (14.4 %) 
+    ## MTCQ                : ****************** (35.8 %) 
+    ## MAP                 : ******************** (39.6 %) 
     ## =============================================================
 
     # Let's try Random Forest, which is a machine learning method
@@ -549,15 +550,15 @@ getmethodNames() to see all possible methods
     ## ---------------------------------------------- 
     ## Based on Correlation metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : ********* (18.1 %) 
-    ## MTCQ                : ********** (19.6 %) 
-    ## MAP                 : **************************** (55.5 %) 
+    ## MTWQ                : ********** (20 %) 
+    ## MTCQ                : ********** (20.2 %) 
+    ## MAP                 : ************************** (51.8 %) 
     ## ============================================================= 
     ## Based on AUC metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : ***** (10.2 %) 
-    ## MTCQ                : ****** (11.2 %) 
-    ## MAP                 : ************************* (49.2 %) 
+    ## MTWQ                : ****** (11.8 %) 
+    ## MTCQ                : ****** (12.8 %) 
+    ## MAP                 : ********************** (44.4 %) 
     ## =============================================================
 
     # ENSEMBLE let's make an ensemble model of all of them
@@ -586,15 +587,16 @@ getmethodNames() to see all possible methods
     ## ---------------------------------------------- 
     ## Based on Correlation metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : ********[****---] (26 %) 
-    ## MTCQ                : *[********-------] (19.8 %) 
-    ## MAP                 : ********************[****--] (49.7 %) 
+    ## MTWQ                : *******[*******-----] (29.1 %) 
+    ## MTCQ                : ****[*******------] (23.5 %) 
+    ## MAP                 : *******************[***---] (46.2 %) 
     ## ============================================================= 
     ## Based on AUC metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : ***[*****---] (17.8 %) 
-    ## MTCQ                [********--------] (16.4 %) 
-    ## MAP                 : ***************[****----] (40.8 %) 
+    ## MTWQ                : **[*******------] (19.8 %) 
+    ## MTCQ                : *[********-------] (20.4 %) 
+    ## MAP                 : **************[****---] (38.6 %) 
     ## =============================================================
 
-Model Evaluation methodologies coming soon!
+(D) Model Evaluation methodologies (coming soon!)
+=================================================
