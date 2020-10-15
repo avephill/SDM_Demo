@@ -167,14 +167,14 @@ SDM-ready dataframe of predictor values and species presence/(pseudo)absence
     ## MAT 
     ## 
     ## After excluding the collinear variables, the linear correlation coefficients ranges between: 
-    ## min correlation ( MAP ~ MTCQ ):  0.2602369 
-    ## max correlation ( MTCQ ~ MTWQ ):  0.6026413 
+    ## min correlation ( MAP ~ MTCQ ):  0.2110059 
+    ## max correlation ( MTCQ ~ MTWQ ):  0.6227894 
     ## 
     ## ---------- VIFs of the remained variables -------- 
     ##   Variables      VIF
-    ## 1      MTWQ 5.296461
-    ## 2      MTCQ 4.320214
-    ## 3       MAP 3.617929
+    ## 1      MTWQ 5.649318
+    ## 2      MTCQ 4.354300
+    ## 3       MAP 3.619278
 
     # It appears that when MAT is removed. There aren't significant collinearity 
     # problems among the predictors
@@ -207,7 +207,7 @@ model
 Linear model
 ------------
 
-*E*<sub>*Y*</sub> = *m**x* + *b* + *e*
+*E*<sub>*Y*</sub> = (*m*)(*x*) + *b* + *e*
 
 *E*<sub>*Y*</sub> is expected habitat suitability
 
@@ -329,7 +329,7 @@ transformed response variable
 *g*(*E*<sub>*Y*</sub>) = *l**o**g*10(*E*<sub>*Y*</sub>/(1 − *E*<sub>*Y*</sub>))
 Solve for *E*<sub>*Y*</sub> to get the probability value between 0 and
 1:
-*E*<sub>*Y*</sub> = *e*<sup>(</sup>*g*(*E*<sub>*Y*</sub>)/(1 + *e*<sup>(</sup>*g*(*E*<sub>*Y*</sub>)))
+*E*<sub>*Y*</sub> = *e*<sup>*g*(*E*<sub>*Y*</sub>)</sup>/(1 + *e*<sup>*g*(*E*<sub>*Y*</sub>)</sup>
 
     prediction_glm.Ey <- exp(prediction_glm) / (1 + exp(prediction_glm))
     project.sdm(prediction_glm.Ey, "Logit GLM SDM (D. californica), MTWQ only")
@@ -482,15 +482,15 @@ getmethodNames() to see all possible methods
     ## ---------------------------------------------- 
     ## Based on Correlation metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : *********** (21.5 %) 
-    ## MTCQ                : ** (4.5 %) 
-    ## MAP                 : ******************************** (63.7 %) 
+    ## MTWQ                : ****** (12.9 %) 
+    ## MTCQ                :  (0.8 %) 
+    ## MAP                 : ************************************** (76.5 %) 
     ## ============================================================= 
     ## Based on AUC metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : ******** (16.9 %) 
-    ## MTCQ                : ** (3.9 %) 
-    ## MAP                 : ************************* (49.4 %) 
+    ## MTWQ                : **** (8.5 %) 
+    ## MTCQ                :  (1 %) 
+    ## MAP                 : ****************************** (60.2 %) 
     ## =============================================================
 
     # Let's try GAM, a regression method
@@ -516,15 +516,15 @@ getmethodNames() to see all possible methods
     ## ---------------------------------------------- 
     ## Based on Correlation metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : ************* (25.6 %) 
-    ## MTCQ                : ********************* (42 %) 
-    ## MAP                 : ************************* (50.9 %) 
+    ## MTWQ                : ************ (23.9 %) 
+    ## MTCQ                : **************** (32.9 %) 
+    ## MAP                 : ************************ (48.9 %) 
     ## ============================================================= 
     ## Based on AUC metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : ******* (14.1 %) 
-    ## MTCQ                : **************** (31.3 %) 
-    ## MAP                 : *************************** (53.1 %) 
+    ## MTWQ                : ******* (14.2 %) 
+    ## MTCQ                : **************** (33 %) 
+    ## MAP                 : ****************** (36.1 %) 
     ## =============================================================
 
     # Let's try Random Forest, which is a machine learning method
@@ -550,15 +550,15 @@ getmethodNames() to see all possible methods
     ## ---------------------------------------------- 
     ## Based on Correlation metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : ********** (19.2 %) 
-    ## MTCQ                : ************ (23.2 %) 
-    ## MAP                 : ************************ (48.3 %) 
+    ## MTWQ                : ********* (18.9 %) 
+    ## MTCQ                : ********* (18.9 %) 
+    ## MAP                 : *************************** (54.9 %) 
     ## ============================================================= 
     ## Based on AUC metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : ****** (11.4 %) 
-    ## MTCQ                : ******* (14.6 %) 
-    ## MAP                 : ********************* (41.7 %) 
+    ## MTWQ                : ****** (11.1 %) 
+    ## MTCQ                : ****** (12 %) 
+    ## MAP                 : ************************* (50.2 %) 
     ## =============================================================
 
     # ENSEMBLE let's make an ensemble model of all of them
@@ -587,15 +587,15 @@ getmethodNames() to see all possible methods
     ## ---------------------------------------------- 
     ## Based on Correlation metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : ********[**-] (22.7 %) 
-    ## MTCQ                : [***********---------] (23.2 %) 
-    ## MAP                 : **********************[****---] (54 %) 
+    ## MTWQ                : *****[***--] (18.7 %) 
+    ## MTCQ                [*********--------] (17.9 %) 
+    ## MAP                 : *********************[*******-------] (58.5 %) 
     ## ============================================================= 
     ## Based on AUC metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : *****[*-] (14.7 %) 
-    ## MTCQ                : [*******-------] (16.5 %) 
-    ## MAP                 : *******************[****---] (48.1 %) 
+    ## MTWQ                : ***[**] (11.5 %) 
+    ## MTCQ               [: ********--------] (15.6 %) 
+    ## MAP                 : ****************[*******-----] (47.2 %) 
     ## =============================================================
 
 Model Evaluation methodologies coming soon!
