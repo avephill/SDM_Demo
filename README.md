@@ -5,29 +5,27 @@ An overview of Species Distribution Modeling in R
 
 ### If you already have an understanding of the motivation of SDM, continue here to learn more about implementation. If you’d like a brief refresher on the motivation and general application of SDM take a look at the powerpoint in this git repository.
 
-### Feel free to download the sdm_demo.R script, install the necessary packages, and run and manipulate this code as you see fit.
+### Feel free to download the sdm\_demo.R script, install the necessary packages, and run and manipulate this code as you see fit.
 
 Let’s start by reading in the necessary packages
 
-``` r
-# For downloading occurrence data from multiple sources
-library(spocc)
-# For data manipulation and presentation
-library(tidyr)
-library(dplyr)
-library(ggplot2)
-# Provides various functions relating to spatial analysis
-library(maptools)
-library(sp)
-# Reads and manipulates vector data
-library(rgdal)
-# Reads and manipulates raster data
-library(raster)
-# SDM packages
-library(dismo)
-library(sdm)
-library(usdm) # For vifstep function
-```
+    # For downloading occurrence data from multiple sources
+    library(spocc)
+    # For data manipulation and presentation
+    library(tidyr)
+    library(dplyr)
+    library(ggplot2)
+    # Provides various functions relating to spatial analysis
+    library(maptools)
+    library(sp)
+    # Reads and manipulates vector data
+    library(rgdal)
+    # Reads and manipulates raster data
+    library(raster)
+    # SDM packages
+    library(dismo)
+    library(sdm)
+    library(usdm) # For vifstep function
 
 (A) Data Preparation
 ====================
@@ -40,32 +38,28 @@ californica*](https://en.wikipedia.org/wiki/Darlingtonia_californica),
 as our species of interest. ![*Darlingtonia
 Californica*](/includes/dar.jpg)
 
-``` r
-# Source occurrence data from iNaturalist
-dc <- occ(query = "Darlingtonia californica", from = 'inat')
-```
+    # Source occurrence data from iNaturalist
+    dc <- occ(query = "Darlingtonia californica", from = 'inat')
 
     ## 2 
     ## 3
 
-``` r
-# Could just as easily source from gbif:
-# dc <- occ(query = "Darlingtonia californica", from = 'gbif')
+    # Could just as easily source from gbif:
+    # dc <- occ(query = "Darlingtonia californica", from = 'gbif')
 
-# Horrible nasty function that makes species occurrence data into lon, lat dataframe
-# This is specific to the format that iNaturalist puts data in
-dc.df <-  as.data.frame(dc$inat$data$Darlingtonia_californica%>%
-  dplyr::filter(identifications_most_agree == TRUE) %>%
-  dplyr::select(location)) %>% 
-  filter(!is.na(location)) %>% 
-  separate(location, c("lat", "lon"), ",") %>% 
-  select(lon, lat)
+    # Horrible nasty function that makes species occurrence data into lon, lat dataframe
+    # This is specific to the format that iNaturalist puts data in
+    dc.df <-  as.data.frame(dc$inat$data$Darlingtonia_californica%>%
+      dplyr::filter(identifications_most_agree == TRUE) %>%
+      dplyr::select(location)) %>% 
+      filter(!is.na(location)) %>% 
+      separate(location, c("lat", "lon"), ",") %>% 
+      select(lon, lat)
 
-# Lat and Lon columns must be specified as numeric values
-dc.df$lon <- as.numeric(dc.df$lon)
-dc.df$lat <- as.numeric(dc.df$lat)
-head(dc.df)
-```
+    # Lat and Lon columns must be specified as numeric values
+    dc.df$lon <- as.numeric(dc.df$lon)
+    dc.df$lat <- as.numeric(dc.df$lat)
+    head(dc.df)
 
     ##         lon      lat
     ## 1 -123.9390 41.67295
@@ -75,77 +69,71 @@ head(dc.df)
     ## 5 -120.8786 40.05013
     ## 6 -120.8630 40.07212
 
-``` r
-# Let's read some political boundaries in for visualization
-usa.shp <- readOGR("USA", verbose=F)
-CA_OR.shp <- usa.shp[usa.shp@data$NAME %in% c("California", "Oregon"),]
+    # Let's read some political boundaries in for visualization
+    usa.shp <- readOGR("USA", verbose=F)
+    CA_OR.shp <- usa.shp[usa.shp@data$NAME %in% c("California", "Oregon"),]
 
-# Let's take a look at our raw occurrence points
-sp::plot(CA_OR.shp, main = "Darlingtonia californica (iNaturalist)")
-points(dc.df$lon, dc.df$lat)
-```
+    # Let's take a look at our raw occurrence points
+    sp::plot(CA_OR.shp, main = "Darlingtonia californica (iNaturalist)")
+    points(dc.df$lon, dc.df$lat)
 
-![](README_files/figure-markdown_github/occurrence%20data-1.png)
+![](README_files/figure-gfm/occurrence%20data-1.png)<!-- -->
 
 Environmental predictor data
 ----------------------------
 
-``` r
-# Download bioclimatic variables from worldclim
-# run ??getData to see other options for climate data
-bioclim_global.stack <- raster::getData(name = "worldclim",
-                        var = 'bio', 
-                        res = 2.5)
+    # Download bioclimatic variables from worldclim
+    # run ??getData to see other options for climate data
+    bioclim_global.stack <- raster::getData(name = "worldclim",
+                            var = 'bio', 
+                            res = 2.5)
 
-# This replaces bioX name with more descriptive acronym
-# We choose 4 climatic variables here more for exemplary purposes than biologically
-# sound reasoning, but all predictors chosen should be motivated/informed
-# by biological knowledge
-names(bioclim_global.stack)[names(bioclim_global.stack) %in% c("bio1", "bio10", "bio11", "bio12")] <- 
-  c("MAT", "MTWQ", "MTCQ", "MAP")
-# bio1 = Mean Annual Temperature (MAT)
-# bio10 = Mean Temperature of Warmest Quarter (MTWQ)
-# bio11 = Mean Temperature of Coldest Quarter (MTCQ)
-# bio12 = Annual Precipitation (MAP)
-# etc.
+    # This replaces bioX name with more descriptive acronym
+    # We choose 4 climatic variables here more for exemplary purposes than biologically
+    # sound reasoning, but all predictors chosen should be motivated/informed
+    # by biological knowledge
+    names(bioclim_global.stack)[names(bioclim_global.stack) %in% c("bio1", "bio10", "bio11", "bio12")] <- 
+      c("MAT", "MTWQ", "MTCQ", "MAP")
+    # bio1 = Mean Annual Temperature (MAT)
+    # bio10 = Mean Temperature of Warmest Quarter (MTWQ)
+    # bio11 = Mean Temperature of Coldest Quarter (MTCQ)
+    # bio12 = Annual Precipitation (MAP)
+    # etc.
 
-# This crops the extent to Oregon and California
-bioclim.stack <- crop(bioclim_global.stack, extent(CA_OR.shp))
+    # This crops the extent to Oregon and California
+    bioclim.stack <- crop(bioclim_global.stack, extent(CA_OR.shp))
 
-# Let's only look at these 4 variables
-predictors <- raster::subset(bioclim.stack, c("MAT", "MTWQ", "MTCQ", "MAP"))
+    # Let's only look at these 4 variables
+    predictors <- raster::subset(bioclim.stack, c("MAT", "MTWQ", "MTCQ", "MAP"))
 
-# Let's see what Mean Annual temperature raster looks like
-sp::plot(predictors$MAT, main = "Mean Annual Temperature")
-```
+    # Let's see what Mean Annual temperature raster looks like
+    sp::plot(predictors$MAT, main = "Mean Annual Temperature")
 
-![](README_files/figure-markdown_github/predictor%20data-1.png)
+![](README_files/figure-gfm/predictor%20data-1.png)<!-- -->
 
 SDM-ready dataframe of predictor values and species presence/(pseudo)absence
 ----------------------------------------------------------------------------
 
-``` r
-# These are the predictor values at locations of species presence
-presvals <- raster::extract(predictors, dc.df)
+    # These are the predictor values at locations of species presence
+    presvals <- raster::extract(predictors, dc.df)
 
-# These are 500 random locations, used as in place of absence values as 
-# 'pseudoabsences' (the species probably doesn't occur at any random point)
-# True 'absences' are better, but folks don't often record all the places where 
-# they don't find species
-backgr <- randomPoints(predictors, 500)
+    # These are 500 random locations, used as in place of absence values as 
+    # 'pseudoabsences' (the species probably doesn't occur at any random point)
+    # True 'absences' are better, but folks don't often record all the places where 
+    # they don't find species
+    backgr <- randomPoints(predictors, 500)
 
-# predictor values at random locations
-absvals <- raster::extract(predictors, backgr)
+    # predictor values at random locations
+    absvals <- raster::extract(predictors, backgr)
 
-# We know that probability of presence is 1 for areas where the species
-# was found, and we assume it's 0 for the random background points
-Y <- c(rep(1, nrow(presvals)), rep(0, nrow(absvals)))
+    # We know that probability of presence is 1 for areas where the species
+    # was found, and we assume it's 0 for the random background points
+    Y <- c(rep(1, nrow(presvals)), rep(0, nrow(absvals)))
 
-# Now here we have a dataframe with the response variable (Y) and corresponding
-# predictor values
-sdmdata <- data.frame(cbind(Y, rbind(presvals, absvals)))
-head(sdmdata)
-```
+    # Now here we have a dataframe with the response variable (Y) and corresponding
+    # predictor values
+    sdmdata <- data.frame(cbind(Y, rbind(presvals, absvals)))
+    head(sdmdata)
 
     ##   Y MAT MTWQ MTCQ  MAP
     ## 1 1 102  158   52 1833
@@ -155,63 +143,55 @@ head(sdmdata)
     ## 5 1  75  160   -2  956
     ## 6 1  86  172    6  915
 
-``` r
-# Collinearity can cause problems in Species Distribution Models. My understanding
-# is that if two or more predictors are collinear across the environmental space, then 
-# it's difficult to determine which predictor is actually influencing the distribution
-# of the species (if not both). If the predictors are not collinear in the areas
-# to which the SDM is projected then the model won't know how to assign probability
-# of habitat suitability to the independent predictors
-# We can check for collinearity by visually inspecting a scatterplot matrix
-pairs(sdmdata[,2:length(sdmdata)], cex = 0.1, fig=TRUE)
-```
+    # Collinearity can cause problems in Species Distribution Models. My understanding
+    # is that if two or more predictors are collinear across the environmental space, then 
+    # it's difficult to determine which predictor is actually influencing the distribution
+    # of the species (if not both). If the predictors are not collinear in the areas
+    # to which the SDM is projected then the model won't know how to assign probability
+    # of habitat suitability to the independent predictors
+    # We can check for collinearity by visually inspecting a scatterplot matrix
+    pairs(sdmdata[,2:length(sdmdata)], cex = 0.1, fig=TRUE)
 
-![](README_files/figure-markdown_github/SDM%20prep-1.png)
+![](README_files/figure-gfm/SDM%20prep-1.png)<!-- -->
 
-``` r
-# MAT and MTWQ appear to be collinear across this area!
-# There are more quantitative assessments of collinearity (like using the Variance Inlation Factor)
-# vifstep() from the usdm package uses VIF to identify the most collinear predictors
-# From the vifstep() documentation:
-# "vifstep calculate VIF for all variables, exclude one with highest VIF (greater than threshold), 
-#repeat the procedure until no variables with VIF greater than th remains."
-vifstep(select(sdmdata, -Y), th=10)
-```
+    # MAT and MTWQ appear to be collinear across this area!
+    # There are more quantitative assessments of collinearity (like using the Variance Inlation Factor)
+    # vifstep() from the usdm package uses VIF to identify the most collinear predictors
+    # From the vifstep() documentation:
+    # "vifstep calculate VIF for all variables, exclude one with highest VIF (greater than threshold), 
+    #repeat the procedure until no variables with VIF greater than th remains."
+    vifstep(select(sdmdata, -Y), th=10)
 
     ## 1 variables from the 4 input variables have collinearity problem: 
     ##  
     ## MAT 
     ## 
     ## After excluding the collinear variables, the linear correlation coefficients ranges between: 
-    ## min correlation ( MAP ~ MTCQ ):  0.2732559 
-    ## max correlation ( MTCQ ~ MTWQ ):  0.6264064 
+    ## min correlation ( MAP ~ MTCQ ):  0.2608437 
+    ## max correlation ( MTCQ ~ MTWQ ):  0.6067196 
     ## 
     ## ---------- VIFs of the remained variables -------- 
     ##   Variables      VIF
-    ## 1      MTWQ 5.553126
-    ## 2      MTCQ 4.743443
-    ## 3       MAP 3.646438
+    ## 1      MTWQ 5.070258
+    ## 2      MTCQ 4.196297
+    ## 3       MAP 3.437755
 
-``` r
-# It appears that when MAT is removed. There aren't significant collinearity 
-# problems among the predictors
+    # It appears that when MAT is removed. There aren't significant collinearity 
+    # problems among the predictors
 
-# So let's remove MAT and try again
-predictors <- raster::subset(bioclim.stack, c("MTWQ", "MTCQ", "MAP"))
-presvals <- raster::extract(predictors, dc.df)
-backgr <- randomPoints(predictors, 500)
-absvals <- raster::extract(predictors, backgr)
-Y <- c(rep(1, nrow(presvals)), rep(0, nrow(absvals)))
-sdmdata <- data.frame(cbind(Y, rbind(presvals, absvals)))
+    # So let's remove MAT and try again
+    predictors <- raster::subset(bioclim.stack, c("MTWQ", "MTCQ", "MAP"))
+    presvals <- raster::extract(predictors, dc.df)
+    backgr <- randomPoints(predictors, 500)
+    absvals <- raster::extract(predictors, backgr)
+    Y <- c(rep(1, nrow(presvals)), rep(0, nrow(absvals)))
+    sdmdata <- data.frame(cbind(Y, rbind(presvals, absvals)))
 
-pairs(sdmdata[,2:length(sdmdata)], cex = 0.1, fig=TRUE)
-```
+    pairs(sdmdata[,2:length(sdmdata)], cex = 0.1, fig=TRUE)
 
-![](README_files/figure-markdown_github/SDM%20prep-2.png)
+![](README_files/figure-gfm/SDM%20prep-2.png)<!-- -->
 
-``` r
-# Better! 
-```
+    # Better! 
 
 (B) Manual (base R) SDM
 =======================
@@ -242,22 +222,19 @@ Linear model
 Assumes: Normal distributed error mean = 0 Variance(*E*<sub>*Y*</sub>)
 is constant
 
-``` r
-sdm_lm <- lm(Y ~ MTWQ, data = sdmdata)
-plot(sdmdata$MTWQ, sdmdata$Y, 
-     main = "D. californica Linear SDM",
-     xlab = "Mean Temp of Warmest Quarter",
-     ylab = "Presence/Absence"
-     )
-abline(sdm_lm)
-```
+    sdm_lm <- lm(Y ~ MTWQ, data = sdmdata)
+    plot(sdmdata$MTWQ, sdmdata$Y, 
+         main = "D. californica Linear SDM",
+         xlab = "Mean Temp of Warmest Quarter",
+         ylab = "Presence/Absence"
+         )
+    abline(sdm_lm)
 
-![](README_files/figure-markdown_github/Linear%20Model-1.png) The
-simplest SDM ever! As Mean Temperature of the Warmest Quarter increases,
-the more absent the species is. This relationship can be mapped out in
-geographic space, but would not be too informative because the model fit
-is poor and we know that other climatic variables impact species
-distributions.
+![](README_files/figure-gfm/Linear%20Model-1.png)<!-- --> The simplest
+SDM ever! As Mean Temperature of the Warmest Quarter increases, the more
+absent the species is. This relationship can be mapped out in geographic
+space, but would not be too informative because the model fit is poor
+and we know that other climatic variables impact species distributions.
 
 Generalized Linear Model SDM
 ----------------------------
@@ -274,18 +251,16 @@ assumptions. A GLM with a Gaussian link function is simply a Linear
 Model– it carries the same assumptions as a linear model. We can make
 the same linear model as above using the glm() function
 
-``` r
-plot(sdmdata$MTWQ, sdmdata$Y, 
-     main = "D. californica Gaussian GLM SDM",
-     xlab = "Mean Temp of Warmest Quarter",
-     ylab = "Presence/Absence"
-)
+    plot(sdmdata$MTWQ, sdmdata$Y, 
+         main = "D. californica Gaussian GLM SDM",
+         xlab = "Mean Temp of Warmest Quarter",
+         ylab = "Presence/Absence"
+    )
 
-sdm_lm <- glm(Y ~ MTWQ, data = sdmdata, family = gaussian)
-abline(sdm_lm, lwd = 3, col = "blue")
-```
+    sdm_lm <- glm(Y ~ MTWQ, data = sdmdata, family = gaussian)
+    abline(sdm_lm, lwd = 3, col = "blue")
 
-![](README_files/figure-markdown_github/Gaussian%20GLM-1.png)
+![](README_files/figure-gfm/Gaussian%20GLM-1.png)<!-- -->
 
 The Gaussian link function doesn’t make too much sense for SDM because
 SDM has a binary response variable: presence or absence. When trying to
@@ -305,51 +280,47 @@ solve for *E*<sub>*Y*</sub>
 Expanded Logit GLM:
 *E*<sub>*Y*</sub> = *e*<sup>*m**x* + *b* + *e*</sup>/(1 + *e*<sup>*m**x* + *b* + *e*</sup>)
 
-``` r
-sdm_glm <- glm(Y ~ MTWQ, data = sdmdata, family = binomial)
-# This is the expanded logit GLM equation, written as an R function
-Ey_calc <- function(x){
-  y_int <- as.numeric(sdm_glm$coefficients["(Intercept)"])
-  m <- as.numeric(sdm_glm$coefficients["MTWQ"])
-  LP = m*x + y_int
-  return(exp(LP) / (1 + exp(LP)))
-}
+    sdm_glm <- glm(Y ~ MTWQ, data = sdmdata, family = binomial)
+    # This is the expanded logit GLM equation, written as an R function
+    Ey_calc <- function(x){
+      y_int <- as.numeric(sdm_glm$coefficients["(Intercept)"])
+      m <- as.numeric(sdm_glm$coefficients["MTWQ"])
+      LP = m*x + y_int
+      return(exp(LP) / (1 + exp(LP)))
+    }
 
-MTWQ_sorted <- sort(sdmdata$MTWQ)
-Ey <- Ey_calc(MTWQ_sorted)
+    MTWQ_sorted <- sort(sdmdata$MTWQ)
+    Ey <- Ey_calc(MTWQ_sorted)
 
-plot(sdmdata$MTWQ, sdmdata$Y, 
-     main = "D. californica Logit GLM SDM",
-     xlab = "Mean Temp of Warmest Quarter",
-     ylab = "Probability of Presence"
-)
+    plot(sdmdata$MTWQ, sdmdata$Y, 
+         main = "D. californica Logit GLM SDM",
+         xlab = "Mean Temp of Warmest Quarter",
+         ylab = "Probability of Presence"
+    )
 
-lines(MTWQ_sorted, Ey, lwd = 3, col = "red")
-```
+    lines(MTWQ_sorted, Ey, lwd = 3, col = "red")
 
-![](README_files/figure-markdown_github/Logit%20GLM-1.png)
+![](README_files/figure-gfm/Logit%20GLM-1.png)<!-- -->
 
 Now let’s project this onto geographic space, taking known values of the
 environment from raster files and using our GLM to predict the
 ‘probability of presence’ in each raster cell
 
-``` r
-# Here's a function we'll use to plot SDM projections
-project.sdm <- function(prediction, plotName){
-  sp::plot(prediction, main = plotName)
-  sp::plot(CA_OR.shp, add = T)
-  points(dc.df, pch = 16, cex = .2)
-  legend("bottomright", legend = "D. californica occ.", pch = 16, cex=.4)
-}
+    # Here's a function we'll use to plot SDM projections
+    project.sdm <- function(prediction, plotName){
+      sp::plot(prediction, main = plotName)
+      sp::plot(CA_OR.shp, add = T)
+      points(dc.df, pch = 16, cex = .2)
+      legend("bottomright", legend = "D. californica occ.", pch = 16, cex=.4)
+    }
 
-# Here's a map of projection of the Logit GLM SDM model. We can use the raster 
-# 'predict()' function to produce a raster layer of the predicted values
-prediction_glm <- raster::predict(bioclim.stack, sdm_glm)
+    # Here's a map of projection of the Logit GLM SDM model. We can use the raster 
+    # 'predict()' function to produce a raster layer of the predicted values
+    prediction_glm <- raster::predict(bioclim.stack, sdm_glm)
 
-project.sdm(prediction_glm, "Logit GLM SDM (D. californica), MTWQ only")
-```
+    project.sdm(prediction_glm, "Logit GLM SDM (D. californica), MTWQ only")
 
-![](README_files/figure-markdown_github/projection1-1.png)
+![](README_files/figure-gfm/projection1-1.png)<!-- -->
 
 Notice how the raster legend shows values between -6 and 4. These aren’t
 probabilities! This happened because we’re plotting the logit
@@ -360,26 +331,22 @@ Solve for *E*<sub>*Y*</sub> to get the probability value between 0 and
 1:
 *E*<sub>*Y*</sub> = *e*<sup>(</sup>*g*(*E*<sub>*Y*</sub>)/(1 + *e*<sup>(</sup>*g*(*E*<sub>*Y*</sub>)))
 
-``` r
-prediction_glm.Ey <- exp(prediction_glm) / (1 + exp(prediction_glm))
-project.sdm(prediction_glm.Ey, "Logit GLM SDM (D. californica), MTWQ only")
-```
+    prediction_glm.Ey <- exp(prediction_glm) / (1 + exp(prediction_glm))
+    project.sdm(prediction_glm.Ey, "Logit GLM SDM (D. californica), MTWQ only")
 
-![](README_files/figure-markdown_github/projection2-1.png)
+![](README_files/figure-gfm/projection2-1.png)<!-- -->
 
 Looks like a real SDM! Although you can see that the model predicts high
 habitat suitability in areas where *D. californica* wasn’t actually
 observed. Maybe if we throw the other climatic predictors in it will
 help.
 
-``` r
-sdm_glm2 <- glm(Y ~ MTWQ + MTCQ + MAP, data = sdmdata, family = binomial)
-prediction_glm2 <- raster::predict(bioclim.stack, sdm_glm2)
-prediction_glm2.Ey <- exp(prediction_glm2) / (1+exp(prediction_glm2))
-project.sdm(prediction_glm2.Ey, "GLM SDM (D. californica)")
-```
+    sdm_glm2 <- glm(Y ~ MTWQ + MTCQ + MAP, data = sdmdata, family = binomial)
+    prediction_glm2 <- raster::predict(bioclim.stack, sdm_glm2)
+    prediction_glm2.Ey <- exp(prediction_glm2) / (1+exp(prediction_glm2))
+    project.sdm(prediction_glm2.Ey, "GLM SDM (D. californica)")
 
-![](README_files/figure-markdown_github/logitGLM2-1.png)
+![](README_files/figure-gfm/logitGLM2-1.png)<!-- -->
 
 Notice how the area where the model predicts high habitat suitability
 where there weren’t actual occurrences is much lower. We can still do
@@ -420,70 +387,58 @@ algorithms Also included in the package are functions to
 -   find the best predicted presence/absence threshold based on chosen
     accuracy metrics
 
-``` r
-# BIOCLIM
-# One of the oldest models, and a profiling method.
-# It puts a convex hull around all the points in n-dimensional niche space
-# Not very powerful at extrapolation
-# Input = predictor values at locations where the species is present
-sdm_bioclim <- bioclim(presvals)
-# Look at the relationship between predicted value and each predictor
-response(sdm_bioclim)
-```
+<!-- -->
 
-![](README_files/figure-markdown_github/dismopackage-1.png)
+    # BIOCLIM
+    # One of the oldest models, and a profiling method.
+    # It puts a convex hull around all the points in n-dimensional niche space
+    # Not very powerful at extrapolation
+    # Input = predictor values at locations where the species is present
+    sdm_bioclim <- bioclim(presvals)
+    # Look at the relationship between predicted value and each predictor
+    response(sdm_bioclim)
 
-``` r
-prediction_bioclim <- dismo::predict(sdm_bioclim, bioclim.stack)
-project.sdm(prediction_bioclim, "BIOCLIM SDM (D. californica)")
-```
+![](README_files/figure-gfm/dismopackage-1.png)<!-- -->
 
-![](README_files/figure-markdown_github/dismopackage-2.png)
+    prediction_bioclim <- dismo::predict(sdm_bioclim, bioclim.stack)
+    project.sdm(prediction_bioclim, "BIOCLIM SDM (D. californica)")
 
-``` r
-# MaxEnt
-# The most popular SDM method, uses the machine learning algorithm maximum entropy.
-# Need to install maxent (https://biodiversityinformatics.amnh.org/open_source/maxent/)
-# and place it here:
-system.file("java", package="dismo")
-```
+![](README_files/figure-gfm/dismopackage-2.png)<!-- -->
+
+    # MaxEnt
+    # The most popular SDM method, uses the machine learning algorithm maximum entropy.
+    # Need to install maxent (https://biodiversityinformatics.amnh.org/open_source/maxent/)
+    # and place it here:
+    system.file("java", package="dismo")
 
     ## [1] "/home/avery/.R/library/dismo/java"
 
-``` r
-# Input = rasterstack or brick of predictors and the lon/lat of species occurrences
-sdm_maxent <- maxent(predictors, dc.df)
-prediction_maxent <- dismo::predict(sdm_maxent, bioclim.stack)
-project.sdm(prediction_maxent, "MaxEnt SDM (D. californica)")
-```
+    # Input = rasterstack or brick of predictors and the lon/lat of species occurrences
+    sdm_maxent <- maxent(predictors, dc.df)
+    prediction_maxent <- dismo::predict(sdm_maxent, bioclim.stack)
+    project.sdm(prediction_maxent, "MaxEnt SDM (D. californica)")
 
-![](README_files/figure-markdown_github/dismopackage-3.png)
+![](README_files/figure-gfm/dismopackage-3.png)<!-- -->
 
-``` r
-# Look at response for each predictor
-response(sdm_maxent)
-```
+    # Look at response for each predictor
+    response(sdm_maxent)
 
-![](README_files/figure-markdown_github/dismopackage-4.png)
+![](README_files/figure-gfm/dismopackage-4.png)<!-- -->
 
-``` r
-# Look at variable contribution for maxent
-sp::plot(sdm_maxent)
-```
+    # Look at variable contribution for maxent
+    sp::plot(sdm_maxent)
 
-![](README_files/figure-markdown_github/dismopackage-5.png)
+![](README_files/figure-gfm/dismopackage-5.png)<!-- -->
 
-``` r
-# Make an ensemble model! Many researchers end up averaging the results of different
-# models and then, if the model accuracy is better, using the average as 
-# an ensemble model
-ensemble_bioclim.maxent <- mean(prediction_bioclim, prediction_maxent)
-sp::plot(ensemble_bioclim.maxent, main = "MaxEnt BIOCLIM ensemble")
-points(dc.df, pch = 16, cex = .2)
-legend("bottomright", legend = "obs. occurrences", pch = 16)
-```
+    # Make an ensemble model! Many researchers end up averaging the results of different
+    # models and then, if the model accuracy is better, using the average as 
+    # an ensemble model
+    ensemble_bioclim.maxent <- mean(prediction_bioclim, prediction_maxent)
+    sp::plot(ensemble_bioclim.maxent, main = "MaxEnt BIOCLIM ensemble")
+    points(dc.df, pch = 16, cex = .2)
+    legend("bottomright", legend = "obs. occurrences", pch = 16)
 
-![](README_files/figure-markdown_github/dismopackage-6.png)
+![](README_files/figure-gfm/dismopackage-6.png)<!-- -->
 
 sdm Package
 -----------
@@ -495,28 +450,58 @@ Boosting, Random Forest, MARS, Support Vector Machines, MaxEnt,
 Mahalanobis distance, DOMAIN, BIOCLIM, Maximum Likelihood You can use
 getmethodNames() to see all possible methods
 
-``` r
-# First we need to prep the data in a particular way to be compatible with sdm functions
-sdm.pkg.df_pres <- cbind(dc.df, presvals)
-sdm.pkg.df_pres$Y <- 1
-names(sdm.pkg.df_pres)[1:2] <- c("x", "y")
-sdm.pkg.df_abs <- data.frame(cbind(backgr, absvals))
-sdm.pkg.df_abs$Y <- 0
-sdmdf_sdmpkg <- rbind(sdm.pkg.df_pres, sdm.pkg.df_abs)
-sdmdata_sdmpkg <- sdmData(Y ~ MTWQ + MTCQ + MAP, train = sdmdf_sdmpkg)
+    # First we need to prep the data in a particular way to be compatible with sdm functions
+    sdm.pkg.df_pres <- cbind(dc.df, presvals)
+    sdm.pkg.df_pres$Y <- 1
+    names(sdm.pkg.df_pres)[1:2] <- c("x", "y")
+    sdm.pkg.df_abs <- data.frame(cbind(backgr, absvals))
+    sdm.pkg.df_abs$Y <- 0
+    sdmdf_sdmpkg <- rbind(sdm.pkg.df_pres, sdm.pkg.df_abs)
+    sdmdata_sdmpkg <- sdmData(Y ~ MTWQ + MTCQ + MAP, train = sdmdf_sdmpkg)
 
-# Run a GLM model using the sdm package
-sdm_ml.glm <- sdm::sdm(Y ~ MTWQ + MTCQ + MAP, data = sdmdata_sdmpkg, methods=c("glm"))
-prediction_ml.glm <- raster::predict(sdm_ml.glm, bioclim.stack)
-project.sdm(prediction_ml.glm, "GLM SDM (D. californica)")
-```
+    # Run a GLM model using the sdm package
+    sdm_ml.glm <- sdm::sdm(Y ~ MTWQ + MTCQ + MAP, data = sdmdata_sdmpkg, methods=c("glm"))
+    prediction_ml.glm <- raster::predict(sdm_ml.glm, bioclim.stack)
+    project.sdm(prediction_ml.glm, "GLM SDM (D. californica)")
 
-![](README_files/figure-markdown_github/sdmpackage-1.png)
+![](README_files/figure-gfm/sdmpackage-1.png)<!-- -->
 
-``` r
-# Use this function to determine which variables were more important
-getVarImp(sdm_ml.glm)
-```
+    # Use this function to determine which variables were more important
+    getVarImp(sdm_ml.glm)
+
+    ## 
+    ## The values of relative variable importance are generated from 1 models...
+
+    ## Relative Variable Importance 
+    ## ============================================================= 
+    ## method              : Permutation based on two metrics (Pearson Correlation and AUC)
+    ## number of variables :  3 
+    ## variable names      :  MTWQ, MTCQ, MAP 
+    ## ============================================================= 
+    ## Relative variable importance 
+    ## ---------------------------------------------- 
+    ## Based on Correlation metric: 
+    ## ---------------------------------------------- 
+    ## MTWQ                : *************** (30.1 %) 
+    ## MTCQ                : ** (4.7 %) 
+    ## MAP                 : *************************** (54.2 %) 
+    ## ============================================================= 
+    ## Based on AUC metric: 
+    ## ---------------------------------------------- 
+    ## MTWQ                : ************ (24.2 %) 
+    ## MTCQ                : ** (4.3 %) 
+    ## MAP                 : ********************** (43.7 %) 
+    ## =============================================================
+
+    # Let's try GAM, a regression method
+    # Run the model and project
+    sdm_ml.gam <- sdm::sdm(Y ~ MTWQ + MTCQ + MAP, data = sdmdata_sdmpkg, methods=c("gam"))
+    prediction_ml.gam <- raster::predict(sdm_ml.gam, bioclim.stack)
+    project.sdm(prediction_ml.gam, "GAM SDM (D. californica)")
+
+![](README_files/figure-gfm/sdmpackage-2.png)<!-- -->
+
+    getVarImp(sdm_ml.gam)
 
     ## 
     ## The values of relative variable importance are generated from 1 models...
@@ -532,107 +517,61 @@ getVarImp(sdm_ml.glm)
     ## Based on Correlation metric: 
     ## ---------------------------------------------- 
     ## MTWQ                : ************* (25.9 %) 
-    ## MTCQ                : *** (5.4 %) 
-    ## MAP                 : **************************** (55.7 %) 
+    ## MTCQ                : ***************** (33.4 %) 
+    ## MAP                 : ************************* (50.3 %) 
     ## ============================================================= 
     ## Based on AUC metric: 
+    ## ---------------------------------------------- 
+    ## MTWQ                : ****** (12.2 %) 
+    ## MTCQ                : ************ (24.9 %) 
+    ## MAP                 : *************************** (54.6 %) 
+    ## =============================================================
+
+    # Let's try Random Forest, which is a machine learning method
+    # Run the model and project
+    sdm_rf <- sdm::sdm(Y ~ MTWQ + MTCQ + MAP, data = sdmdata_sdmpkg, methods=c("rf"))
+    prediction_rf <- raster::predict(sdm_rf, bioclim.stack)
+    project.sdm(prediction_rf, "Random Forest SDM (D. californica)")
+
+![](README_files/figure-gfm/sdmpackage-3.png)<!-- -->
+
+    getVarImp(sdm_rf)
+
+    ## 
+    ## The values of relative variable importance are generated from 1 models...
+
+    ## Relative Variable Importance 
+    ## ============================================================= 
+    ## method              : Permutation based on two metrics (Pearson Correlation and AUC)
+    ## number of variables :  3 
+    ## variable names      :  MTWQ, MTCQ, MAP 
+    ## ============================================================= 
+    ## Relative variable importance 
+    ## ---------------------------------------------- 
+    ## Based on Correlation metric: 
     ## ---------------------------------------------- 
     ## MTWQ                : ********** (19.6 %) 
-    ## MTCQ                : *** (5.2 %) 
-    ## MAP                 : ********************* (41.5 %) 
-    ## =============================================================
-
-``` r
-# Let's try GAM, a regression method
-# Run the model and project
-sdm_ml.gam <- sdm::sdm(Y ~ MTWQ + MTCQ + MAP, data = sdmdata_sdmpkg, methods=c("gam"))
-prediction_ml.gam <- raster::predict(sdm_ml.gam, bioclim.stack)
-project.sdm(prediction_ml.gam, "GAM SDM (D. californica)")
-```
-
-![](README_files/figure-markdown_github/sdmpackage-2.png)
-
-``` r
-getVarImp(sdm_ml.gam)
-```
-
-    ## 
-    ## The values of relative variable importance are generated from 1 models...
-
-    ## Relative Variable Importance 
-    ## ============================================================= 
-    ## method              : Permutation based on two metrics (Pearson Correlation and AUC)
-    ## number of variables :  3 
-    ## variable names      :  MTWQ, MTCQ, MAP 
-    ## ============================================================= 
-    ## Relative variable importance 
-    ## ---------------------------------------------- 
-    ## Based on Correlation metric: 
-    ## ---------------------------------------------- 
-    ## MTWQ                : **************** (31.7 %) 
-    ## MTCQ                : ********************** (43.7 %) 
-    ## MAP                 : ********************** (43.9 %) 
+    ## MTCQ                : ********* (17.1 %) 
+    ## MAP                 : *************************** (53.1 %) 
     ## ============================================================= 
     ## Based on AUC metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : ********** (20.8 %) 
-    ## MTCQ                : ******************* (37.6 %) 
-    ## MAP                 : *********************** (46.6 %) 
+    ## MTWQ                : ***** (10.2 %) 
+    ## MTCQ                : ***** (10 %) 
+    ## MAP                 : ********************** (44.8 %) 
     ## =============================================================
 
-``` r
-# Let's try Random Forest, which is a machine learning method
-# Run the model and project
-sdm_rf <- sdm::sdm(Y ~ MTWQ + MTCQ + MAP, data = sdmdata_sdmpkg, methods=c("rf"))
-prediction_rf <- raster::predict(sdm_rf, bioclim.stack)
-project.sdm(prediction_rf, "Random Forest SDM (D. californica)")
-```
+    # ENSEMBLE let's make an ensemble model of all of them
+    # a number of methods can be used, see documentation, but they include 
+    # weighted mean, unweighted mean, median, entropy, etc
+    sdm_glm.gam.rf <- sdm::sdm(Y ~ MTWQ + MTCQ + MAP, data = sdmdata_sdmpkg, methods=c("glm","gam","rf"))
+    sdm_ensemble <- sdm::ensemble(sdm_glm.gam.rf, bioclim.stack, 
+                                  setting=list(method="weighted", stat="TSS"))
+    project.sdm(sdm_ensemble, "Ensemble (D. californica)")
 
-![](README_files/figure-markdown_github/sdmpackage-3.png)
+![](README_files/figure-gfm/sdmpackage-4.png)<!-- -->
 
-``` r
-getVarImp(sdm_rf)
-```
-
-    ## 
-    ## The values of relative variable importance are generated from 1 models...
-
-    ## Relative Variable Importance 
-    ## ============================================================= 
-    ## method              : Permutation based on two metrics (Pearson Correlation and AUC)
-    ## number of variables :  3 
-    ## variable names      :  MTWQ, MTCQ, MAP 
-    ## ============================================================= 
-    ## Relative variable importance 
-    ## ---------------------------------------------- 
-    ## Based on Correlation metric: 
-    ## ---------------------------------------------- 
-    ## MTWQ                : ********** (19.3 %) 
-    ## MTCQ                : ********** (19.5 %) 
-    ## MAP                 : ************************** (52.5 %) 
-    ## ============================================================= 
-    ## Based on AUC metric: 
-    ## ---------------------------------------------- 
-    ## MTWQ                : ***** (10 %) 
-    ## MTCQ                : ***** (10.3 %) 
-    ## MAP                 : ********************** (43.9 %) 
-    ## =============================================================
-
-``` r
-# ENSEMBLE let's make an ensemble model of all of them
-# a number of methods can be used, see documentation, but they include 
-# weighted mean, unweighted mean, median, entropy, etc
-sdm_glm.gam.rf <- sdm::sdm(Y ~ MTWQ + MTCQ + MAP, data = sdmdata_sdmpkg, methods=c("glm","gam","rf"))
-sdm_ensemble <- sdm::ensemble(sdm_glm.gam.rf, bioclim.stack, 
-                              setting=list(method="weighted", stat="TSS"))
-project.sdm(sdm_ensemble, "Ensemble (D. californica)")
-```
-
-![](README_files/figure-markdown_github/sdmpackage-4.png)
-
-``` r
-getVarImp(sdm_glm.gam.rf)
-```
+    getVarImp(sdm_glm.gam.rf)
 
     ## 
     ## The variable importance for all the models are combined (averaged)...
@@ -648,15 +587,15 @@ getVarImp(sdm_glm.gam.rf)
     ## ---------------------------------------------- 
     ## Based on Correlation metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : ********[****--] (25.6 %) 
-    ## MTCQ                [***********----------] (22.8 %) 
-    ## MAP                 : *********************[****---] (51.8 %) 
+    ## MTWQ                : ********[***---] (24.9 %) 
+    ## MTCQ                : [********--------] (18.6 %) 
+    ## MAP                 : ************************[*] (52.4 %) 
     ## ============================================================= 
     ## Based on AUC metric: 
     ## ---------------------------------------------- 
-    ## MTWQ                : ****[***---] (17 %) 
-    ## MTCQ               [: *********---------] (17.5 %) 
-    ## MAP                 : ********************[*-] (45 %) 
+    ## MTWQ                : **[*****---] (15.1 %) 
+    ## MTCQ                [*******-----] (13.4 %) 
+    ## MAP                 : *******************[****---] (47.8 %) 
     ## =============================================================
 
 Model Evaluation methodologies coming soon!
