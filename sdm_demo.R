@@ -2,36 +2,28 @@
 # SDM concepts through demonstration this is more or less the first draft of the
 # RMarkdown File in this repo
 #
-# NOTE: Updated to use 'terra' for raster and vector data, and 'sf' for vector data, replacing 'raster' and 'rgdal'.
-#
-# Minimal changes were made to preserve the educational structure.
+# NOTE: Updated to use 'terra' for raster and vector data, and 'sf' for vector data, replacing 'raster' and 'sp'.
 
-# For downloading occurrence data from multiple sources
+# For downloading occurrence and environmental data
 library(spocc)
-# For data manipulation and presentation
+library(geodata)
+# For data manipulation
 library(tidyr)
 library(dplyr)
-library(ggplot2)
 library(stringr)
-# Provides various functions relating to spatial analysis
-# library(maptools)
-# library(sp)
-# Reads and manipulates vector data
-# library(rgdal) # replaced by sf/terra
-# Reads and manipulates raster data
-# library(raster) # replaced by terra
+# For spatial data manipulation
 library(terra)
 library(tidyterra)
-# library(sf)
+library(sf)
 # SDM packages
 library(dismo)
 library(sdm)
-library(geodata)
+# For plotting
 library(patchwork)
+library(ggplot2)
 
 
 # Let's ready some political boundaries in for visualization
-# usa.shp <- readOGR("USA")
 usa_borders <- sf::st_read("data/usa_borders.gpkg")
 CA_OR_borders <- usa_borders[usa_borders$NAME %in% c("California", "Oregon"), ]
 
